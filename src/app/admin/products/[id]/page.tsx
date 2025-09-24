@@ -125,9 +125,11 @@ export default function ProductFormPage() {
         }
     }, [isEditing, productId, router, toast]);
 
+    const [isUploading, setIsUploading] = useState(false);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         accept: { 'image/*': [] },
-        onDrop: acceptedFiles => {
+        onDrop: async (acceptedFiles) => {
             if (files.length + acceptedFiles.length > 10) {
                 toast({
                     variant: 'destructive',
@@ -136,17 +138,81 @@ export default function ProductFormPage() {
                 });
                 return;
             }
-            
-            const newFiles = acceptedFiles.map((file, index) => ({
+
+            setIsUploading(true);
+
+            const newFilesWithPreview = acceptedFiles.map((file, index) => ({
                 id: `new-${Date.now()}-${index}`,
                 name: file.name,
                 preview: URL.createObjectURL(file),
                 isExisting: false,
-                originalUrl: undefined,
-                file: file // Store the actual file for upload
+                file: file,
             }));
-            
-            setFiles(prevFiles => [...prevFiles, ...newFiles]);
+
+            setFiles(prevFiles => [...prevFiles, ...newFilesWithPreview]);
+
+            const formData = new FormData();
+            acceptedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            try {
+                const uploadResponse = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const uploadData = await uploadResponse.json();
+
+                if (!uploadData.success || !uploadData.files) {
+                    throw new Error(uploadData.message || 'Failed to get uploaded file URLs');
+                }
+
+                const uploadedUrls = uploadData.files as string[];
+
+                setFiles(prevFiles => {
+                    // Create a copy to modify
+                    const updatedFiles = [...prevFiles];
+
+                    // Replace temporary blob URLs with permanent URLs from the server
+                    newFilesWithPreview.forEach((tempFile, index) => {
+                        const correspondingUrl = uploadedUrls[index];
+                        const fileIndex = updatedFiles.findIndex(f => f.id === tempFile.id);
+                        if (fileIndex !== -1 && correspondingUrl) {
+                            updatedFiles[fileIndex] = {
+                                ...updatedFiles[fileIndex],
+                                preview: correspondingUrl,
+                                originalUrl: correspondingUrl,
+                                isExisting: true, // It's now saved on the server
+                                file: undefined, // No need to hold the file object anymore
+                            };
+                            URL.revokeObjectURL(tempFile.preview); // Clean up blob URL
+                        }
+                    });
+                    return updatedFiles;
+                });
+
+                toast({
+                    title: 'Upload successful',
+                    description: `${acceptedFiles.length} image(s) have been uploaded.`,
+                });
+
+            } catch (error) {
+                console.error('Failed to upload files:', error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Upload Error',
+                    description: 'Could not upload images. Please try again.',
+                });
+                // Remove the temporary previews if upload fails
+                setFiles(prevFiles => prevFiles.filter(f => !newFilesWithPreview.some(nf => nf.id === f.id)));
+            } finally {
+                setIsUploading(false);
+            }
         }
     });
 
@@ -170,29 +236,31 @@ export default function ProductFormPage() {
                 // First upload images if there are new files
                 let imageUrls: string[] = [];
                 
-                if (files.length > 0) {
-                    // Filter out blob URLs and only upload actual files
-                    const actualFiles = files.filter(f => !f.preview.startsWith('blob:'));
+                const newFilesToUpload = files.filter(f => f.file && !f.isExisting);
+                
+                if (newFilesToUpload.length > 0) {
+                    const formData = new FormData();
+                    newFilesToUpload.forEach(fileWithPreview => {
+                        if (fileWithPreview.file) {
+                            formData.append('files', fileWithPreview.file);
+                        }
+                    });
                     
-                    if (actualFiles.length > 0) {
-                        const formData = new FormData();
-                        actualFiles.forEach(file => {
-                            if (file.file) {
-                                formData.append('files', file.file);
-                            }
-                        });
-                        
-                        const uploadResponse = await fetch('/api/upload', {
-                            method: 'POST',
-                            body: formData,
-                        });
-                        
-                        if (uploadResponse.ok) {
-                            const uploadData = await uploadResponse.json();
+                    const uploadResponse = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        const uploadData = await uploadResponse.json();
+                        if (uploadData.success && uploadData.files) {
                             imageUrls = uploadData.files;
                         } else {
-                            throw new Error('Failed to upload images');
+                            throw new Error(uploadData.message || 'Failed to get image URLs from upload response');
                         }
+                    } else {
+                        const errorData = await uploadResponse.json();
+                        throw new Error(errorData.message || 'Failed to upload images');
                     }
                 }
                 
@@ -258,18 +326,24 @@ export default function ProductFormPage() {
                     originalPrice,
                     description,
                     isAvailable: status === 'In Stock',
+                    badge: badge ?? null,
+                    grade: grade ?? null,
                 }
 
-                // Filter out blob URLs and only send actual image URLs
-                const imageUrls = files
-                    .filter(f => f.isExisting || !f.preview.startsWith('blob:'))
-                    .map(f => f.preview)
-                    .filter(Boolean);
-                payload.imageUrls = imageUrls;
+                // All images are already uploaded and have permanent URLs
+                const allImageUrls = files
+                    .map(f => f.originalUrl)
+                    .filter((url): url is string => !!url);
 
-                console.log('Files state:', files);
-                console.log('Filtered imageUrls:', imageUrls);
-                console.log('Sending update payload:', payload);
+                payload.imageUrls = allImageUrls;
+
+                console.log('=== DEBUGGING PRODUCT UPDATE ===');
+                console.log('Product ID:', productId);
+                console.log('Payload being sent:', JSON.stringify(payload, null, 2));
+                console.log('Form state - badge:', badge);
+                console.log('Form state - grade:', grade);
+                console.log('Form state - status:', status);
+                console.log('Image URLs:', allImageUrls);
 
                 const res = await fetch(`/api/products/${productId}`, {
                     method: 'PATCH',
@@ -277,10 +351,29 @@ export default function ProductFormPage() {
                     body: JSON.stringify(payload),
                 })
 
-                const data = await res.json()
+                console.log('Response status:', res.status);
+                console.log('Response ok:', res.ok);
+                console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+
+                let data;
+                try {
+                    const responseText = await res.text();
+                    console.log('Raw response text:', responseText);
+                    data = responseText ? JSON.parse(responseText) : {};
+                } catch (parseError) {
+                    console.error('Failed to parse response as JSON:', parseError);
+                    data = {};
+                }
+
+                console.log('Parsed response data:', JSON.stringify(data, null, 2));
 
                 if (!res.ok || !data.success) {
-                    throw new Error(data?.message || 'Failed to update product')
+                    console.error('Backend validation failed:', {
+                        status: res.status,
+                        statusText: res.statusText,
+                        data: data
+                    });
+                    throw new Error(data?.message || `Request failed with status ${res.status}`)
                 }
 
                 // Update local UI from response to reflect immediate change
@@ -398,13 +491,22 @@ export default function ProductFormPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div {...getRootProps()} className="flex justify-center rounded-lg border-2 border-dashed border-input px-6 py-10 cursor-pointer hover:border-primary transition-colors">
+                                <div {...getRootProps()} className={`flex justify-center rounded-lg border-2 border-dashed border-input px-6 py-10 transition-colors ${isUploading ? 'cursor-not-allowed bg-muted' : 'cursor-pointer hover:border-primary'}`}>
                                     <div className="text-center">
-                                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                                        <p className="mt-4 text-sm text-muted-foreground">
-                                            {isDragActive ? 'Drop the files here...' : 'Drag & drop images here, or click to select'}
-                                        </p>
-                                        <Input {...getInputProps()} />
+                                        {isUploading ? (
+                                            <>
+                                                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
+                                                <p className="mt-4 text-sm text-muted-foreground">Uploading...</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                                                <p className="mt-4 text-sm text-muted-foreground">
+                                                    {isDragActive ? 'Drop the files here...' : 'Drag & drop images here, or click to select'}
+                                                </p>
+                                            </>
+                                        )}
+                                        <Input {...getInputProps()} disabled={isUploading} />
                                     </div>
                                 </div>
                                 {files.length > 0 && (
@@ -423,32 +525,19 @@ export default function ProductFormPage() {
                                                     size="icon" 
                                                     className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
                                                     onClick={() => removeFile(file)}
+                                                    disabled={isUploading}
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>
-                                                {file.isExisting && (
+                                                {!file.preview.startsWith('blob:') && (
                                                     <div className="absolute bottom-1 left-1">
                                                         <Badge variant="secondary" className="text-xs">
-                                                            Existing
-                                                        </Badge>
-                                                    </div>
-                                                )}
-                                                {file.preview.startsWith('blob:') && (
-                                                    <div className="absolute bottom-1 right-1">
-                                                        <Badge variant="destructive" className="text-xs">
-                                                            Temporary
+                                                            Saved
                                                         </Badge>
                                                     </div>
                                                 )}
                                             </div>
                                         ))}
-                                    </div>
-                                )}
-                                {files.some(f => f.preview.startsWith('blob:')) && (
-                                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                                        <p className="text-xs text-yellow-800">
-                                            ⚠️ Some images are temporary and will not be saved. Please upload actual image files.
-                                        </p>
                                     </div>
                                 )}
                             </CardContent>
@@ -532,7 +621,7 @@ export default function ProductFormPage() {
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="badge">Badge</Label>
-                                        <Select value={badge || undefined} onValueChange={(value) => setBadge(value)}>
+                                        <Select value={badge} onValueChange={(value) => setBadge(value as 'A' | 'B' | 'C' | 'D' | undefined)}>
                                             <SelectTrigger id="badge" aria-label="Select badge">
                                                 <SelectValue placeholder="Select badge" />
                                             </SelectTrigger>
@@ -546,7 +635,7 @@ export default function ProductFormPage() {
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="grade">Grade (for pre-owned items)</Label>
-                                        <Select value={grade || undefined} onValueChange={(value) => setGrade(value as 'A' | 'B' | 'C' | 'D' | '')}>
+                                        <Select value={grade} onValueChange={(value) => setGrade(value as 'A' | 'B' | 'C' | 'D' | undefined)}>
                                             <SelectTrigger id="grade" aria-label="Select grade">
                                                 <SelectValue placeholder="Select grade" />
                                             </SelectTrigger>

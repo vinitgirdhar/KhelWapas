@@ -25,7 +25,8 @@ model User {
   orders          Order[]
   addresses       Address[]
   paymentMethods  PaymentMethod[]
-  
+  reviews         Review[]
+
   @@map("users")
 }
 
@@ -49,7 +50,9 @@ model Product {
   isAvailable   Boolean     @default(true)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  
+
+  reviews         Review[]
+
   @@map("products")
 }
 
@@ -169,4 +172,25 @@ enum CardType {
   mastercard
   rupay
   amex
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  rating        Int
+  comment       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  reviewerName  String
+  reviewerImage String?
+
+  @@map("reviews")
+}
+
+enum ReviewerType {
+  user
+  admin
 }

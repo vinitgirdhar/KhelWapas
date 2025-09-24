@@ -59,7 +59,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // Update a product
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const body = await request.json()
+    let body: any = {}
+    try {
+      body = await request.json()
+    } catch (e) {
+      console.warn('[API] Empty or invalid JSON body for product update', { id: params.id })
+    }
+    console.log('[API] Raw update body received', { id: params.id, body })
+
+    // Flexible URL validator: allow absolute http(s) OR leading slash relative paths
+    const relativeOrAbsoluteUrl = z.string().refine(val => {
+      if (!val) return false;
+      if (val.startsWith('/')) return true; // allow relative path from public root
+      try {
+        const u = new URL(val);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, { message: 'image URL must be absolute http(s) or start with /' });
 
     // Validation schema (all fields optional; we only update provided ones)
     const schema = z.object({
@@ -70,7 +88,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       originalPrice: z.coerce.number().nonnegative().nullable().optional(),
       description: z.string().optional(),
       isAvailable: z.boolean().optional(),
-      imageUrls: z.array(z.string().url()).optional(),
+      imageUrls: z.array(relativeOrAbsoluteUrl).optional(),
       badge: z.string().nullable().optional(),
       grade: z.enum(['A', 'B', 'C', 'D']).nullable().optional(),
       specs: z.record(z.any()).optional(),
@@ -78,8 +96,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
+      console.warn('[API] Product update validation failed', {
+        body,
+        issues: parsed.error.flatten(),
+      });
       return NextResponse.json(
-        { success: false, message: 'Invalid payload', issues: parsed.error.flatten() },
+        { success: false, message: 'Invalid payload', issues: parsed.error.flatten(), received: body },
         { status: 400 }
       )
     }
