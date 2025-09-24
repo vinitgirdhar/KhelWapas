@@ -3,9 +3,11 @@
 
 import Link from 'next/link';
 import {
-  ChevronLeft,
-  Upload,
-  X,
+    ChevronLeft,
+    Upload,
+    X,
+    ChevronUp,
+    ChevronDown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,8 +49,9 @@ export default function ProductFormPage() {
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [price, setPrice] = useState(0);
-    const [originalPrice, setOriginalPrice] = useState(0);
+    // Pricing states start as empty string for new product UX; internally we parse to number when saving
+    const [price, setPrice] = useState<string>('');
+    const [originalPrice, setOriginalPrice] = useState<string>('');
     const [sku, setSku] = useState('');
     const [stock, setStock] = useState(0);
     const [status, setStatus] = useState<'In Stock' | 'Out of Stock'>('In Stock');
@@ -73,8 +76,8 @@ export default function ProductFormPage() {
                         const product = data.product;
                         setName(product.name);
                         setDescription(product.description || '');
-                        setPrice(product.price);
-                        setOriginalPrice(product.originalPrice || 0);
+                        setPrice(product.price?.toString() ?? '');
+                        setOriginalPrice((product.originalPrice ?? '').toString());
                         setSku(product.sku);
                         setStock(product.status === 'In Stock' ? 1 : 0);
                         setStatus(product.status);
@@ -380,8 +383,8 @@ export default function ProductFormPage() {
                 const updated = data.product as Product
                 setName(updated.name)
                 setDescription(updated.description || '')
-                setPrice(updated.price)
-                setOriginalPrice(updated.originalPrice || 0)
+                setPrice(updated.price != null ? String(updated.price) : '')
+                setOriginalPrice(updated.originalPrice != null ? String(updated.originalPrice) : '')
                 setStatus(updated.status as 'In Stock' | 'Out of Stock')
                 setType(updated.type as 'new' | 'preowned')
                 setCategory(updated.category)
@@ -429,6 +432,41 @@ export default function ProductFormPage() {
             });
         };
     }, [files]);
+
+    // Helper to determine dynamic step based on current numeric value
+    const dynamicStep = (valStr: string) => {
+        const v = parseInt(valStr || '0', 10);
+        if (v >= 1000) return 100;
+        if (v >= 100) return 10;
+        return 1;
+    };
+
+    const sanitizeInput = (raw: string) => {
+        // Remove non-digits
+        let cleaned = raw.replace(/[^0-9]/g, '');
+        // Strip leading zeros unless the value is exactly '0'
+        if (cleaned.length > 1) {
+            cleaned = cleaned.replace(/^0+/, '');
+        }
+        return cleaned;
+    };
+
+    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const cleaned = sanitizeInput(e.target.value);
+        setPrice(cleaned);
+    };
+    const handleOriginalPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const cleaned = sanitizeInput(e.target.value);
+        setOriginalPrice(cleaned);
+    };
+
+    const adjustValue = (valueStr: string, direction: 1 | -1, setter: (v: string) => void) => {
+        const current = parseInt(valueStr || '0', 10);
+        const step = dynamicStep(valueStr);
+        let next = current + direction * step;
+        if (next < 0) next = 0;
+        setter(next === 0 ? '' : next.toString());
+    };
 
     return (
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -572,11 +610,55 @@ export default function ProductFormPage() {
                                 <div className="grid gap-6">
                                     <div className="grid gap-3">
                                         <Label htmlFor="price">Price (₹)</Label>
-                                        <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="price"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                value={price}
+                                                placeholder=""
+                                                onChange={handlePriceChange}
+                                                onFocus={() => { if (price === '0') setPrice(''); }}
+                                            />
+                                            <div className="flex flex-col gap-1">
+                                                <Button type="button" variant="outline" size="icon" className="h-6 w-8"
+                                                    title={`Increase by ${dynamicStep(price)}`}
+                                                    onClick={() => adjustValue(price, 1, setPrice)}>
+                                                    <ChevronUp className="h-4 w-4" />
+                                                </Button>
+                                                <Button type="button" variant="outline" size="icon" className="h-6 w-8"
+                                                    title={`Decrease by ${dynamicStep(price)}`}
+                                                    onClick={() => adjustValue(price, -1, setPrice)} disabled={!price}>
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="originalPrice">Original Price (₹)</Label>
-                                        <Input id="originalPrice" type="number" value={originalPrice} onChange={(e) => setOriginalPrice(Number(e.target.value))} />
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="originalPrice"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                value={originalPrice}
+                                                placeholder=""
+                                                onChange={handleOriginalPriceChange}
+                                                onFocus={() => { if (originalPrice === '0') setOriginalPrice(''); }}
+                                            />
+                                            <div className="flex flex-col gap-1">
+                                                <Button type="button" variant="outline" size="icon" className="h-6 w-8"
+                                                    title={`Increase by ${dynamicStep(originalPrice)}`}
+                                                    onClick={() => adjustValue(originalPrice, 1, setOriginalPrice)}>
+                                                    <ChevronUp className="h-4 w-4" />
+                                                </Button>
+                                                <Button type="button" variant="outline" size="icon" className="h-6 w-8"
+                                                    title={`Decrease by ${dynamicStep(originalPrice)}`}
+                                                    onClick={() => adjustValue(originalPrice, -1, setOriginalPrice)} disabled={!originalPrice}>
+                                                    <ChevronDown className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
