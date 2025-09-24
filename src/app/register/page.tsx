@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -63,8 +64,9 @@ export default function RegisterPage() {
           description: `Welcome to Khelwapas, ${result.user.fullName}!`,
         });
 
-        // Redirect user to the login page
-        router.push('/login');
+        // Redirect user to the login page, preserving redirect
+        const redirect = searchParams.get('redirect');
+        router.push(redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login');
       } else {
         toast({
           variant: 'destructive',
@@ -141,7 +143,7 @@ export default function RegisterPage() {
           </Form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="font-semibold text-primary hover:underline">
+            <Link href={searchParams.get('redirect') ? `/login?redirect=${encodeURIComponent(searchParams.get('redirect') as string)}` : '/login'} className="font-semibold text-primary hover:underline">
               Log in here
             </Link>
           </p>

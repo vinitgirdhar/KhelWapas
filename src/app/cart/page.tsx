@@ -11,11 +11,14 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Minus, Plus, Trash2, ShoppingCart, BaggageClaim, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { savePurchaseIntent } from '@/lib/purchase-intent';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity } = useCart();
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsMounted(true);
@@ -44,6 +47,17 @@ export default function CartPage() {
       </div>
     );
   }
+
+  const handleProceedToCheckout = () => {
+    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    if (!loggedIn) {
+      savePurchaseIntent({ action: 'checkout', createdAt: Date.now(), returnTo: '/cart' });
+      toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
+      router.push('/login?redirect=%2Fcart');
+      return;
+    }
+    router.push('/checkout');
+  };
 
   return (
     <div className="container py-12 md:py-16">
@@ -108,7 +122,7 @@ export default function CartPage() {
                 <span>₹{total.toLocaleString('en-IN')}</span>
               </div>
                <Separator />
-               <Button size="lg" className="w-full font-bold" onClick={() => router.push('/checkout')}>
+               <Button size="lg" className="w-full font-bold" onClick={handleProceedToCheckout}>
                 Proceed to Checkout <ArrowRight className="ml-2 h-5 w-5"/>
               </Button>
             </CardContent>

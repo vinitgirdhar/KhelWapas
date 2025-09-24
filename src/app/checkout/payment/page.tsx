@@ -13,6 +13,7 @@ import OrderSummary from '@/components/checkout/order-summary';
 import type { PaymentMethod, Address } from '@/types/user';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { savePurchaseIntent } from '@/lib/purchase-intent';
 
 export default function PaymentPage() {
   const { toast } = useToast();
@@ -25,6 +26,14 @@ export default function PaymentPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Require login for payment step
+    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    if (!loggedIn) {
+      savePurchaseIntent({ action: 'checkout', createdAt: Date.now(), returnTo: '/checkout/payment' });
+      toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
+      router.push('/login?redirect=%2Fcheckout%2Fpayment');
+      return;
+    }
     const storedAddress = sessionStorage.getItem('selectedAddress');
     if (!storedAddress) {
       // Redirect if no address is selected
@@ -41,21 +50,39 @@ export default function PaymentPage() {
       return;
     }
 
-    setLoading(true);
-    // Simulate API call for 1.5 seconds
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setLoading(false);
-    
-    console.log('Order placed:', {
-      items,
-      shippingAddress,
-      paymentMethod: selectedPayment,
-    });
-    
-    toast({ title: 'Order Placed!', description: 'Thank you for your purchase.' });
-    removeAll();
-    sessionStorage.removeItem('selectedAddress');
-    router.push('/checkout/success');
+    try {
+      setLoading(true);
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((it) => ({ productId: it.id, quantity: it.quantity, price: it.price })),
+          paymentMethod: selectedPayment,
+        }),
+      });
+
+      if (response.status === 401) {
+        // Not logged in; capture intent and redirect to login
+        savePurchaseIntent({ action: 'checkout', createdAt: Date.now(), returnTo: '/checkout/payment' });
+        toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
+        router.push('/login?redirect=%2Fcheckout%2Fpayment');
+        return;
+      }
+
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to place order');
+      }
+
+      toast({ title: 'Order Placed!', description: 'Thank you for your purchase.' });
+      removeAll();
+      sessionStorage.removeItem('selectedAddress');
+      router.push('/checkout/success');
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Order Failed', description: err?.message || 'Something went wrong.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isMounted || !shippingAddress) {

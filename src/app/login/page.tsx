@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,6 +20,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useCart } from '@/hooks/use-cart';
+import { getPurchaseIntent, clearPurchaseIntent } from '@/lib/purchase-intent';
 // Users will be authenticated via API
 
 const loginSchema = z.object({
@@ -33,6 +36,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { addItem } = useCart();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -72,7 +77,28 @@ export default function LoginPage() {
           description: `Welcome back, ${result.user.fullName}!`,
         });
 
-        router.push('/');
+        // If we have a saved purchase intent, complete it
+        const intent = getPurchaseIntent();
+        if (intent) {
+          try {
+            if (intent.product && intent.quantity) {
+              addItem({ ...intent.product, quantity: intent.quantity });
+            }
+          } catch {}
+          clearPurchaseIntent();
+          if (intent.action === 'buy' || intent.action === 'checkout') {
+            router.push('/checkout');
+            return;
+          }
+          if (intent.action === 'add') {
+            router.push('/cart');
+            return;
+          }
+        }
+
+        // Else follow redirect param or go home
+        const redirect = searchParams.get('redirect');
+        router.push(redirect ? decodeURIComponent(redirect) : '/');
       } else {
         toast({
           variant: 'destructive',
@@ -100,6 +126,15 @@ export default function LoginPage() {
           <CardDescription>Log in to access your account.</CardDescription>
         </CardHeader>
         <CardContent>
+          {searchParams.get('redirect') && (
+            <div className="mb-4">
+              <Alert>
+                <AlertDescription>
+                  Please login to continue with your purchase.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -140,6 +175,11 @@ export default function LoginPage() {
               Register here
             </Link>
           </p>
+          {searchParams.get('redirect') && (
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              <Link href={decodeURIComponent(searchParams.get('redirect') || '/')}>Cancel and go back</Link>
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -20,6 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useCart } from '@/hooks/use-cart';
+import { useToast } from '@/hooks/use-toast';
+import { savePurchaseIntent } from '@/lib/purchase-intent';
 // Address data will be fetched from user profile or localStorage
 
 
@@ -27,6 +29,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { addItem } = useCart();
+  const { toast } = useToast();
   
   const productId = typeof params.id === 'string' ? params.id : '';
   const [product, setProduct] = useState<Product | null>(null);
@@ -84,17 +87,49 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
+    if (!product) return;
+    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    if (!loggedIn) {
+      savePurchaseIntent({
+        action: 'add',
+        product,
+        quantity,
+        returnTo: `/products/${productId}`,
+        createdAt: Date.now(),
+      });
+      toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
+      router.push(`/login?redirect=${encodeURIComponent(`/products/${productId}`)}`);
+      return;
+    }
     addItem({ ...product, quantity });
   };
 
   const handleBuyNow = () => {
-    addItem({ ...product, quantity });
-    // Simulate accelerated checkout by selecting the default address and skipping to payment
-    const defaultAddress = userAddresses.find(addr => addr.isDefault);
-    if(defaultAddress) {
-        sessionStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
+    if (!product) return;
+    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    if (!loggedIn) {
+      savePurchaseIntent({
+        action: 'buy',
+        product,
+        quantity,
+        returnTo: `/products/${productId}`,
+        createdAt: Date.now(),
+      });
+      toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
+      router.push(`/login?redirect=${encodeURIComponent(`/products/${productId}`)}`);
+      return;
     }
-    router.push('/checkout/payment');
+    addItem({ ...product, quantity });
+    // Try to preselect default address if present
+    try {
+      const stored = localStorage.getItem('userAddresses');
+      const addresses = stored ? JSON.parse(stored) : [];
+      const defaultAddress = Array.isArray(addresses) ? addresses.find((a: any) => a?.isDefault) : null;
+      if (defaultAddress) {
+        sessionStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
+      }
+    } catch {}
+    router.push('/checkout');
   };
 
   // For now, we'll use placeholder suggested products

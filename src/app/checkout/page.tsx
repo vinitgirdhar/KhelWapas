@@ -11,6 +11,7 @@ import type { Address } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { savePurchaseIntent } from '@/lib/purchase-intent';
 
 
 export default function CheckoutPage() {
@@ -22,6 +23,14 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Require login for checkout entry
+    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    if (!loggedIn) {
+      savePurchaseIntent({ action: 'checkout', createdAt: Date.now(), returnTo: '/checkout' });
+      toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
+      router.push('/login?redirect=%2Fcheckout');
+      return;
+    }
     // Persist selected address across reloads if needed, e.g., in sessionStorage
     const storedAddress = sessionStorage.getItem('selectedAddress');
     if (storedAddress) {
