@@ -199,6 +199,7 @@ export default function KhelbotWidget() {
                                 className="rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/90"
                                 onClick={() => setIsOpen(true)}
                                 aria-label="Open KhelBot"
+                                suppressHydrationWarning
                             >
                                 <MessageSquare className="h-8 w-8" />
                             </Button>

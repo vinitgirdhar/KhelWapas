@@ -20,14 +20,23 @@ const categories = [
 ];
 
 export default function FeaturedProducts() {
-  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
 
+  // Ensure component is mounted (client-side only)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Fetch products from API
   useEffect(() => {
+    if (!mounted) return;
+    
     const fetchProducts = async () => {
+      setLoading(true);
       try {
         const response = await fetch('/api/products?available=true');
         const data = await response.json();
@@ -36,34 +45,36 @@ export default function FeaturedProducts() {
         }
       } catch (error) {
         console.error('Failed to fetch products:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProducts();
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
-    if (allProducts.length > 0) {
-      setLoading(true);
-      // Simulate loading for better UX
-      const timer = setTimeout(() => {
-        if (activeCategory === 'All') {
-          setFilteredProducts(allProducts.slice(0, 6));
-        } else {
-          setFilteredProducts(
-            allProducts.filter((p) => p.category === activeCategory)
-          );
-        }
-        setLoading(false);
-      }, 300);
+    if (!mounted || allProducts.length === 0) return;
+    
+    setLoading(true);
+    // Simulate loading for better UX
+    const timer = setTimeout(() => {
+      if (activeCategory === 'All') {
+        setFilteredProducts(allProducts.slice(0, 6));
+      } else {
+        setFilteredProducts(
+          allProducts.filter((p) => p.category === activeCategory)
+        );
+      }
+      setLoading(false);
+    }, 300);
 
-      return () => clearTimeout(timer);
-    }
-  }, [activeCategory, allProducts]);
+    return () => clearTimeout(timer);
+  }, [activeCategory, allProducts, mounted]);
   
 
   return (
-    <section className="py-20 bg-muted/20">
+    <section className="py-20 bg-muted/20" suppressHydrationWarning>
       <div className="container">
         <div className="text-center mb-12">
           <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tight">
@@ -73,7 +84,7 @@ export default function FeaturedProducts() {
             Top picks from our collection, ready for their next game.
           </p>
         </div>
-        <div className="flex justify-center flex-wrap gap-2 mb-8">
+        <div className="flex justify-center flex-wrap gap-2 mb-8" suppressHydrationWarning>
           {categories.map((category) => (
             <Button
               key={category.name}
@@ -85,6 +96,7 @@ export default function FeaturedProducts() {
                 }
               }}
               className="gap-2"
+              suppressHydrationWarning
             >
               {category.icon}
               <span>{category.name}</span>
@@ -92,7 +104,7 @@ export default function FeaturedProducts() {
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {loading
+          {!mounted || loading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex flex-col gap-4">
                   <Skeleton className="h-64 w-full" />

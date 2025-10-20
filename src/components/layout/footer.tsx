@@ -9,14 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function Footer() {
-  const [currentYear, setCurrentYear] = useState<number | string>('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
+    setMounted(true);
   }, []);
 
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-muted/40 border-t">
+    <footer className="bg-muted/40 border-t" suppressHydrationWarning>
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 flex flex-col gap-4">
@@ -26,19 +28,19 @@ export default function Footer() {
             <p className="text-muted-foreground max-w-sm">
               The premier marketplace for new and pre-owned sports gear. Join our community and play on!
             </p>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2" suppressHydrationWarning>
               <a href="#" aria-label="Twitter">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" suppressHydrationWarning>
                   <Twitter className="h-5 w-5 text-muted-foreground hover:text-primary" />
                 </Button>
               </a>
               <a href="#" aria-label="Instagram">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" suppressHydrationWarning>
                   <Instagram className="h-5 w-5 text-muted-foreground hover:text-primary" />
                 </Button>
               </a>
               <a href="#" aria-label="Github">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" suppressHydrationWarning>
                   <Github className="h-5 w-5 text-muted-foreground hover:text-primary" />
                 </Button>
               </a>
@@ -65,13 +67,13 @@ export default function Footer() {
           <div className="md:col-span-2 lg:col-span-1">
             <h4 className="font-headline font-semibold mb-4">Stay Connected</h4>
             <p className="text-muted-foreground mb-2 text-sm">Get the latest deals and new arrivals.</p>
-            <form className="flex gap-2">
-              <Input type="email" placeholder="Enter your email" className="bg-background" />
-              <Button type="submit" variant="secondary" className="shrink-0">Subscribe</Button>
+            <form className="flex gap-2" suppressHydrationWarning>
+              <Input type="email" placeholder="Enter your email" className="bg-background" suppressHydrationWarning />
+              <Button type="submit" variant="secondary" className="shrink-0" suppressHydrationWarning>Subscribe</Button>
             </form>
           </div>
         </div>
-        <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
+        <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground" suppressHydrationWarning>
           <p>&copy; {currentYear} KHELWAPAS. All Rights Reserved. | <Link href="/admin/login" className="hover:text-primary hover:underline">Admin Login</Link></p>
         </div>
       </div>
