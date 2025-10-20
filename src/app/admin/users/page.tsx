@@ -51,13 +51,25 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
-const statusConfig: Record<User['status'], string> = {
+// Local UI user type (different from backend schema; we map on fetch)
+type AdminUIUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'User' | 'Buyer' | 'Seller';
+  status: 'Active' | 'Blocked' | 'Pending';
+  rating: number;
+  registrationDate: string;
+  avatar?: string;
+};
+
+const statusConfig: Record<AdminUIUser['status'], string> = {
   'Active': 'bg-green-100 text-green-800 border-green-200',
   'Blocked': 'bg-red-100 text-red-800 border-red-200',
   'Pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
 };
 
-const roleConfig: Record<User['role'], string> = {
+const roleConfig: Record<AdminUIUser['role'], string> = {
     'Admin': 'bg-primary/10 text-primary border-primary/20',
     'Buyer': 'bg-blue-100 text-blue-800 border-blue-200',
     'Seller': 'bg-purple-100 text-purple-800 border-purple-200',
@@ -66,12 +78,43 @@ const roleConfig: Record<User['role'], string> = {
 
 export default function AdminUsersPage() {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [users, setUsers] = React.useState<User[]>([]);
+  const [users, setUsers] = React.useState<AdminUIUser[]>([]);
     const [isAlertDialogOpen, setIsAlertDialogOpen] = React.useState(false);
-    const [userToAction, setUserToAction] = React.useState<User | null>(null);
+  const [userToAction, setUserToAction] = React.useState<AdminUIUser | null>(null);
     const [actionType, setActionType] = React.useState<'Block' | 'Unblock' | null>(null);
 
     const { toast } = useToast();
+
+  // Initial fetch of users (was missing) and whenever we need a refresh
+  React.useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('/api/admin/users');
+        if (!res.ok) {
+          console.warn('Failed to load users, status:', res.status);
+          return;
+        }
+        const data = await res.json();
+        if (data.success && Array.isArray(data.users)) {
+          // Map backend shape to UI expected shape.
+          const mapped: AdminUIUser[] = data.users.map((u: any) => ({
+            id: u.id,
+            name: u.fullName || u.name || 'Unnamed',
+            email: u.email,
+            role: (u.role === 'admin' ? 'Admin' : 'User'),
+            status: 'Active', // default until status field exists
+            rating: 5, // static placeholder; could be average of reviews
+            registrationDate: u.createdAt || new Date().toISOString(),
+            avatar: u.profilePicture || '/images/products/background.jpg'
+          }));
+          setUsers(mapped);
+        }
+      } catch (e) {
+        console.error('Fetch users error:', e);
+      }
+    };
+    fetchUsers();
+  }, []);
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         const term = event.target.value.toLowerCase();
@@ -95,7 +138,7 @@ export default function AdminUsersPage() {
         }
     };
     
-    const handleOpenAlert = (user: User, type: 'Block' | 'Unblock') => {
+  const handleOpenAlert = (user: AdminUIUser, type: 'Block' | 'Unblock') => {
         setUserToAction(user);
         setActionType(type);
         setIsAlertDialogOpen(true);
@@ -104,7 +147,7 @@ export default function AdminUsersPage() {
     const confirmAction = () => {
         if (userToAction && actionType) {
             const newStatus = actionType === 'Block' ? 'Blocked' : 'Active';
-            updateUserStatus(userToAction.id, newStatus);
+            // Placeholder: would call an API to change status when implemented
             // Refresh the user list from API
             const fetchUsers = async () => {
                 try {
@@ -191,7 +234,7 @@ export default function AdminUsersPage() {
 }
 
 
-function UserTable({ users, onAction }: { users: User[], onAction: (user: User, action: 'Block' | 'Unblock') => void }) {
+function UserTable({ users, onAction }: { users: AdminUIUser[], onAction: (user: AdminUIUser, action: 'Block' | 'Unblock') => void }) {
     
     const renderRating = (rating: number) => {
         return (
@@ -237,7 +280,7 @@ function UserTable({ users, onAction }: { users: User[], onAction: (user: User, 
                       <div className="flex items-center gap-3">
                         <Avatar>
                             <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            <AvatarFallback>{user.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div>
                             <div className="font-medium">{user.name}</div>

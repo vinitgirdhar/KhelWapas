@@ -1,17 +1,10 @@
 
-'use client';
-
-import type { Metadata } from 'next';
-import { usePathname } from 'next/navigation';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { Toaster } from '@/components/ui/toaster';
-import Header from '@/components/layout/header';
-import Footer from '@/components/layout/footer';
 import { Inter, Space_Grotesk } from 'next/font/google';
-import KhelbotWidget from '@/components/khelbot/khelbot-widget';
-import { CartProvider } from '@/hooks/use-cart';
 import { AuthProvider } from '@/hooks/use-auth';
+import { CartProvider } from '@/hooks/use-cart';
+import AppShell from '@/components/layout/app-shell';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,13 +23,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isInvoiceRoute = pathname.startsWith('/invoice');
-  
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
@@ -67,18 +54,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        {isInvoiceRoute && <link rel="stylesheet" href="/invoice-print.css" />}
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
         <AuthProvider>
           <CartProvider>
-            <div className="relative flex min-h-dvh flex-col">
-              {isAdminRoute || isInvoiceRoute ? null : <Header />}
-              <main className={cn("flex-1", { "bg-muted/40": isAdminRoute, "bg-gray-100": isInvoiceRoute })}>{children}</main>
-              {isAdminRoute || isInvoiceRoute ? null : <Footer />}
-            </div>
-            <Toaster />
-            {!isAdminRoute && <KhelbotWidget />}
+            <AppShell>{children}</AppShell>
           </CartProvider>
         </AuthProvider>
       </body>

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { normalizeMany } from '@/lib/image'
+import { existsSync } from 'fs'
+import { join } from 'path'
 
 interface RouteParams {
   params: {
@@ -22,6 +25,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Transform product to match the expected format
+    let imgs = Array.isArray(product.imageUrls) ? normalizeMany(product.imageUrls as any) : [];
+    imgs = imgs.filter(u => {
+      if (u.startsWith('http://') || u.startsWith('https://')) return true;
+      const fp = join(process.cwd(), 'public', u.replace(/^\//,'') );
+      return existsSync(fp);
+    });
     const transformedProduct = {
       id: product.id,
       name: product.name,
@@ -30,10 +39,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       price: Number(product.price),
       originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
       grade: product.grade,
-      image: Array.isArray(product.imageUrls) && product.imageUrls.length > 0 
-        ? product.imageUrls[0] 
-        : '/images/products/background.jpg',
-      images: Array.isArray(product.imageUrls) ? product.imageUrls : [],
+      image: imgs[0] || '/images/products/background.jpg',
+      images: imgs,
       dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
       badge: product.badge,
       description: product.description,
@@ -132,6 +139,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     console.log('[API] Product updated', { id: updated.id })
 
     // Transform to match frontend shape
+    let imgs2 = Array.isArray(updated.imageUrls) ? normalizeMany(updated.imageUrls as any) : [];
+    imgs2 = imgs2.filter(u => {
+      if (u.startsWith('http://') || u.startsWith('https://')) return true;
+      const fp = join(process.cwd(), 'public', u.replace(/^\//,'') );
+      return existsSync(fp);
+    });
     const transformedProduct = {
       id: updated.id,
       name: updated.name,
@@ -140,10 +153,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       price: Number(updated.price),
       originalPrice: updated.originalPrice ? Number(updated.originalPrice) : undefined,
       grade: updated.grade,
-      image: Array.isArray(updated.imageUrls) && (updated.imageUrls as any).length > 0
-        ? (updated.imageUrls as any)[0]
-        : '/images/products/background.jpg',
-      images: Array.isArray(updated.imageUrls) ? (updated.imageUrls as any) : [],
+      image: imgs2[0] || '/images/products/background.jpg',
+      images: imgs2,
       dataAiHint: updated.name.toLowerCase().split(' ').slice(0, 2).join(' '),
       badge: updated.badge,
       description: updated.description,

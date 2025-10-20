@@ -45,18 +45,26 @@ const getBadgeClass = (badge?: Product['badge']) => {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const primaryImage = product.image || (product.images && product.images[0]) || '/images/products/background.jpg';
   return (
     <Card className="overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
       <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         <CardContent className="p-0 flex flex-col flex-grow">
           <div className="relative">
             <Image
-              src={product.image}
+              src={primaryImage}
               alt={product.name}
               width={600}
               height={600}
               className="aspect-square object-cover w-full"
               data-ai-hint={product.dataAiHint}
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (!target.dataset.fallback) {
+                  target.src = '/images/products/background.jpg';
+                  target.dataset.fallback = 'true';
+                }
+              }}
             />
             {product.badge && (
                 <Badge className={`absolute top-3 right-3 ${getBadgeClass(product.badge)}`}>

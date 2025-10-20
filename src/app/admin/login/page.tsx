@@ -43,24 +43,44 @@ export default function AdminLoginPage() {
 
   async function onSubmit(data: AdminLoginFormValues) {
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLoading(false);
     
-    // In a real app, you'd handle success/error from an API
-    if (data.email === 'admin@khelwapas.com' && data.password === 'admin123') {
-         toast({
-            title: 'Admin Login Successful!',
-            description: "Welcome to the dashboard.",
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Admin Login Successful!',
+          description: `Welcome back, ${result.user.name}!`,
         });
+        
         // Redirect to admin dashboard
         router.push('/admin/dashboard');
-    } else {
-         toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: "Invalid credentials.",
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: result.error || 'Invalid credentials.',
         });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'An error occurred during login. Please try again.',
+      });
+    } finally {
+      setLoading(false);
     }
   }
 

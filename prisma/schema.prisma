@@ -18,6 +18,8 @@ model User {
   profilePicture String?
   passwordHash String
   role        Role     @default(user)
+  status      UserStatus @default(Active)
+  rating      Int       @default(5)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -33,6 +35,12 @@ model User {
 enum Role {
   user
   admin
+}
+
+enum UserStatus {
+  Active
+  Blocked
+  Pending
 }
 
 model Product {

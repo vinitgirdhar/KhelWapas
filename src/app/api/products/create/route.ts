@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { normalizeMany } from '@/lib/image';
 import { z } from 'zod';
 
 const productSchema = z.object({
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
     console.log('[API] Product created in database:', product.id);
 
     // Transform to match frontend format
+    const normImages = Array.isArray(product.imageUrls) ? normalizeMany(product.imageUrls as any) : [];
     const transformedProduct = {
       id: product.id,
       name: product.name,
@@ -68,10 +70,8 @@ export async function POST(request: NextRequest) {
       price: Number(product.price),
       originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
       grade: product.grade,
-      image: Array.isArray(product.imageUrls) && product.imageUrls.length > 0 
-        ? product.imageUrls[0] 
-        : '/images/products/background.jpg',
-      images: Array.isArray(product.imageUrls) ? product.imageUrls : [],
+      image: normImages[0] || '/images/products/background.jpg',
+      images: normImages,
       dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
       badge: product.badge,
       description: product.description,

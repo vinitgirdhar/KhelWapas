@@ -66,26 +66,28 @@ export default function AdminProductsPage() {
     const [allProducts, setAllProducts] = React.useState<Product[]>([]);
     const [loading, setLoading] = React.useState(true);
 
-    // Fetch products from API
-    React.useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const response = await fetch('/api/products');
-                const data = await response.json();
-                if (data.success) {
-                    console.log('Fetched products:', data.products);
-                    setAllProducts(data.products);
-                    setProducts(data.products);
-                }
-            } catch (error) {
-                console.error('Failed to fetch products:', error);
-            } finally {
-                setLoading(false);
+    // Fetch products from API - moved outside useEffect so it can be reused
+    const fetchProducts = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('/api/products');
+            const data = await response.json();
+            if (data.success) {
+                console.log('Fetched products:', data.products);
+                setAllProducts(data.products);
+                setProducts(data.products);
             }
-        };
-
-        fetchProducts();
+        } catch (error) {
+            console.error('Failed to fetch products:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    // Initial fetch on mount
+    React.useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
 
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         const term = event.target.value.toLowerCase();
@@ -108,20 +110,7 @@ export default function AdminProductsPage() {
     };
 
     const handleRefresh = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/products');
-            const data = await response.json();
-            if (data.success) {
-                console.log('Refreshed products:', data.products);
-                setAllProducts(data.products);
-                setProducts(data.products);
-            }
-        } catch (error) {
-            console.error('Failed to refresh products:', error);
-        } finally {
-            setLoading(false);
-        }
+        await fetchProducts();
     };
 
     // Listen for product creation/updates from other pages
@@ -152,7 +141,7 @@ export default function AdminProductsPage() {
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('focus', handleFocus);
         };
-    }, []);
+    }, [fetchProducts]);
 
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">

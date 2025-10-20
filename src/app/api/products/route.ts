@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { normalizeMany } from '@/lib/image'
+import { existsSync } from 'fs'
+import { join } from 'path'
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,26 +34,35 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform products to match the expected format
-    const transformedProducts = products.map(product => ({
-      id: product.id,
-      name: product.name,
-      category: product.category,
-      type: product.type,
-      price: Number(product.price),
-      originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
-      grade: product.grade,
-      image: Array.isArray(product.imageUrls) && product.imageUrls.length > 0 
-        ? product.imageUrls[0] 
-        : '/images/products/background.jpg',
-      images: Array.isArray(product.imageUrls) ? product.imageUrls : [],
-      dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
-      badge: product.badge,
-      description: product.description,
-      specs: product.specs || {},
-      status: product.isAvailable ? 'In Stock' : 'Out of Stock',
-      listingDate: product.createdAt.toISOString().split('T')[0],
-      sku: `KW-${product.category.substring(0, 2).toUpperCase()}-${product.id.substring(0, 3)}`
-    }))
+    const transformedProducts = products.map(product => {
+      let images = Array.isArray(product.imageUrls) ? normalizeMany(product.imageUrls as any) : [];
+      // Filter out relative images that do not exist on disk
+      images = images.filter(u => {
+        if (u.startsWith('http://') || u.startsWith('https://')) return true;
+        // Local public asset
+        const filePath = join(process.cwd(), 'public', u.replace(/^\//, ''));
+        return existsSync(filePath);
+      });
+      const primary = images[0];
+      return {
+        id: product.id,
+        name: product.name,
+        category: product.category,
+        type: product.type,
+        price: Number(product.price),
+        originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+        grade: product.grade,
+        image: primary || '/images/products/background.jpg',
+        images,
+        dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
+        badge: product.badge,
+        description: product.description,
+        specs: product.specs || {},
+        status: product.isAvailable ? 'In Stock' : 'Out of Stock',
+        listingDate: product.createdAt.toISOString().split('T')[0],
+        sku: `KW-${product.category.substring(0, 2).toUpperCase()}-${product.id.substring(0, 3)}`
+      };
+    });
 
     return NextResponse.json({
       success: true,

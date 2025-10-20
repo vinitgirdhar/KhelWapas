@@ -7,24 +7,25 @@ async function main() {
   console.log('🌱 Starting database seed...')
   console.log('🔗 DATABASE_URL =', process.env.DATABASE_URL)
 
-  // Instead of destructive wipe every run, we only delete dependent data that we always want refreshed.
-  // (If you really need a full reset, manually run a truncate script.)
-  await prisma.order.deleteMany()
-  await prisma.sellRequest.deleteMany()
-  await prisma.product.deleteMany()
-  // Keep existing users so login tokens remain valid; we'll upsert admin + test users.
+  // Non-destructive: we no longer auto-delete products so real data persists.
+  // Still clear ephemeral tables that are safe to rebuild.
+  await prisma.order.deleteMany();
+  await prisma.sellRequest.deleteMany();
+  // NOTE: Products are NOT deleted automatically anymore.
 
   console.log('👤 Ensuring admin user exists...')
   const adminEmail = 'admin@khelwapas.com'
   const adminPassword = await hashPassword('admin123')
   const adminUser = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { passwordHash: adminPassword, fullName: 'Admin User', role: 'admin' },
+    update: { passwordHash: adminPassword, fullName: 'Admin User', role: 'admin', status: 'Active', rating: 5 },
     create: {
       fullName: 'Admin User',
       email: adminEmail,
       passwordHash: adminPassword,
-      role: 'admin'
+      role: 'admin',
+      status: 'Active',
+      rating: 5
     }
   })
   console.log(`✅ Admin user ready: ${adminUser.email}`)
@@ -47,12 +48,14 @@ async function main() {
   for (const u of testUsers) {
     const created = await prisma.user.upsert({
       where: { email: u.email },
-      update: { fullName: u.fullName, passwordHash: testUserPasswordHash, role: 'user' },
+      update: { fullName: u.fullName, passwordHash: testUserPasswordHash, role: 'user', status: 'Active', rating: 5 },
       create: {
         fullName: u.fullName,
         email: u.email,
         passwordHash: testUserPasswordHash,
         role: 'user',
+        status: 'Active',
+        rating: 5,
         createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
       }
     })
@@ -60,8 +63,10 @@ async function main() {
   }
   console.log('✅ Test users seeded / updated.')
 
-  console.log('📦 Creating mock product data... (will recreate)')
-  const mockProducts = [
+  const shouldSeedMocks = process.env.SEED_MOCK_PRODUCTS === 'true';
+  if (shouldSeedMocks) {
+    console.log('📦 Creating mock product data (SEED_MOCK_PRODUCTS=true)...')
+    const mockProducts = [
     {
       name: 'Yonex Astrox 100 ZZ',
       category: 'Badminton',
@@ -70,7 +75,7 @@ async function main() {
       originalPrice: 22000,
       description: 'The Astrox 100 ZZ is designed for advanced players seeking power and a steep-angled smash. Features a hyper-slim shaft and Rotational Generator System for ultimate control.',
       isAvailable: true,
-      imageUrls: ['/images/products/astrox-100.webp'],
+  imageUrls: ['/images/products/background.jpg'],
       badge: 'A',
       grade: 'A',
       specs: {
@@ -90,7 +95,7 @@ async function main() {
       originalPrice: 3200,
       description: 'A high-quality Kashmir Willow bat designed for club-level cricketers. Features a traditional shape with substantial edges for explosive power.',
       isAvailable: true,
-      imageUrls: ['/images/products/sg-cobra.webp'],
+  imageUrls: ['/images/products/background.jpg'],
       badge: 'B',
       grade: 'B',
       specs: {
@@ -109,7 +114,7 @@ async function main() {
       originalPrice: 1100,
       description: 'The Nivia Storm Football is a durable, all-weather ball suitable for training and matches on grass or artificial turf. Its 32-panel construction ensures true flight.',
       isAvailable: true,
-      imageUrls: ['/images/products/nivia-storm.webp'],
+  imageUrls: ['/images/products/background.jpg'],
       badge: 'C',
       grade: 'C',
       specs: {
@@ -128,7 +133,7 @@ async function main() {
       originalPrice: 2800,
       description: 'A pre-owned Spalding Zi/O Excel basketball with excellent grip and feel. Ideal for indoor and outdoor play. Shows minor signs of use but in great condition.',
       isAvailable: true,
-      imageUrls: ['/images/products/spalding-excel.webp'],
+  imageUrls: ['/images/products/background.jpg'],
       badge: 'A',
       grade: 'B',
       specs: {
@@ -147,7 +152,7 @@ async function main() {
         originalPrice: 4500,
         description: 'The Wilson Tour Slam Lite is perfect for beginners and recreational players. Its oversized head provides a larger sweet spot, and V-Matrix technology offers more power.',
         isAvailable: true,
-        imageUrls: ['/images/products/wilson-tour-slam.webp'],
+  imageUrls: ['/images/products/background.jpg'],
         badge: 'B',
         grade: 'B',
         specs: {
@@ -166,7 +171,7 @@ async function main() {
         originalPrice: 550,
         description: 'A pack of 6 durable nylon shuttlecocks from Cosco. Ideal for practice and club play, offering consistent flight and good durability.',
         isAvailable: true,
-        imageUrls: ['/images/products/cosco-sprint.webp'],
+  imageUrls: ['/images/products/background.jpg'],
         badge: 'C',
         grade: 'C',
         specs: {
@@ -177,20 +182,30 @@ async function main() {
             'Color': 'Yellow'
         }
     }
-  ]
+    ]
 
-  for (const product of mockProducts) {
-    await prisma.product.create({
-      data: {
-        ...product,
-        type: product.type as 'new' | 'preowned',
-        grade: product.grade as 'A' | 'B' | 'C' | 'D',
-        specs: product.specs || {},
-      },
-    });
+    for (const product of mockProducts) {
+      // Only create if a product with same name doesn't already exist
+      const exists = await prisma.product.findFirst({ where: { name: product.name } });
+      if (!exists) {
+        await prisma.product.create({
+          data: {
+            ...product,
+            type: product.type as 'new' | 'preowned',
+            grade: product.grade as 'A' | 'B' | 'C' | 'D',
+            specs: product.specs || {},
+          },
+        });
+        console.log(`   • Mock product added: ${product.name}`);
+      } else {
+        console.log(`   • Skipped existing product: ${product.name}`);
+      }
+    }
+  } else {
+    console.log('📦 Skipping mock products (SEED_MOCK_PRODUCTS not true)')
   }
 
-  console.log('✅ Database seeded with admin + test users and mock products!')
+  console.log('✅ Database seed complete (admin + users + optional mocks).')
   // Print counts for verification
   const counts = await Promise.all([
     prisma.user.count(),
