@@ -120,7 +120,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    return NextResponse.json({ success: true, sellRequest })
+    // Transform the data to parse JSON fields
+    const transformedRequest = {
+      ...sellRequest,
+      imageUrls: typeof sellRequest.imageUrls === 'string' 
+        ? JSON.parse(sellRequest.imageUrls) 
+        : sellRequest.imageUrls,
+      price: Number(sellRequest.price),
+      createdAt: sellRequest.createdAt.toISOString(),
+      updatedAt: sellRequest.updatedAt.toISOString()
+    }
+
+    return NextResponse.json({ success: true, sellRequest: transformedRequest })
   } catch (error) {
     console.error('Get sell request error:', error)
     return NextResponse.json(

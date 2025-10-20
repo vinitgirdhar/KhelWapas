@@ -2,11 +2,13 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   MoreHorizontal,
   Search,
   File,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -78,10 +80,19 @@ export default function AdminOrdersPage() {
     React.useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const response = await fetch('/api/orders');
+                const response = await fetch('/api/orders', {
+                    credentials: 'include', // Include cookies for authentication
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
                 const data = await response.json();
-                if (data.success) {
+                console.log('Orders API response:', data); // Debug log
+                if (data.success && data.orders) {
+                    console.log(`Loaded ${data.orders.length} orders`); // Debug log
                     setOrders(data.orders);
+                } else {
+                    console.error('Failed to load orders:', data.message);
                 }
             } catch (error) {
                 console.error('Failed to fetch orders:', error);
@@ -110,7 +121,7 @@ export default function AdminOrdersPage() {
         }
 
         return filtered;
-    }, [searchTerm, activeTab]);
+    }, [orders, searchTerm, activeTab]);
     
     const handleExport = () => {
         const doc = new jsPDF() as jsPDFWithAutoTable;
@@ -151,6 +162,15 @@ export default function AdminOrdersPage() {
 
   return (
     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+      {loading ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="flex items-center justify-center">
+              <div className="text-muted-foreground">Loading orders...</div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
       <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as OrderStatus | 'all')}>
         <div className="flex items-center">
           <TabsList>
@@ -195,14 +215,80 @@ export default function AdminOrdersPage() {
             <OrdersTable orders={filteredOrders} />
         </TabsContent>
       </Tabs>
+      )}
     </main>
   );
 }
 
 
 function OrdersTable({ orders }: { orders: Order[] }) {
+    const router = useRouter();
+    const { toast } = useToast();
     const canCancel = (status: OrderStatus) => !['Delivered', 'Cancelled', 'Returned'].includes(status);
     const canUpdateStatus = (status: OrderStatus) => !['Cancelled', 'Returned'].includes(status);
+
+    const handleViewDetails = (orderId: string) => {
+        router.push(`/admin/orders/${orderId}`);
+    };
+
+    const handleCancelOrder = async (orderId: string) => {
+        if (!confirm('Are you sure you want to cancel this order?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/orders/${orderId}/cancel`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Cancelled by admin' }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Order cancelled successfully',
+                });
+                // Refresh the page
+                window.location.reload();
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to cancel order',
+                    variant: 'destructive',
+                });
+            }
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to cancel order',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    if (orders.length === 0) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Orders</CardTitle>
+                    <CardDescription>
+                        A list of all orders on the platform.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <p className="text-muted-foreground">No orders found.</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            Orders will appear here once customers place them.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
          <Card>
@@ -261,15 +347,23 @@ function OrdersTable({ orders }: { orders: Order[] }) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/orders/${order.orderId}`}>View Details</Link>
+                          <DropdownMenuItem onClick={() => handleViewDetails(order.orderId)}>
+                            View Details
                           </DropdownMenuItem>
                           {canUpdateStatus(order.orderStatus) && (
-                            <DropdownMenuItem>Update Status</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewDetails(order.orderId)}>
+                              Update Status
+                            </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem onClick={() => window.open(`/invoice/${order.orderId}`, '_blank')}>
+                            Print Invoice
+                          </DropdownMenuItem>
                           {canCancel(order.orderStatus) && (
-                            <DropdownMenuItem className="text-destructive">
-                                Cancel Order
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleCancelOrder(order.orderId)}
+                            >
+                              Cancel Order
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
