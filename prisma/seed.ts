@@ -4,25 +4,63 @@ import { hashPassword } from '../src/lib/auth'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting clean database setup...')
+  console.log('🌱 Starting database seed...')
+  console.log('🔗 DATABASE_URL =', process.env.DATABASE_URL)
 
-  // Clear all existing data
+  // Instead of destructive wipe every run, we only delete dependent data that we always want refreshed.
+  // (If you really need a full reset, manually run a truncate script.)
   await prisma.order.deleteMany()
   await prisma.sellRequest.deleteMany()
   await prisma.product.deleteMany()
-  await prisma.user.deleteMany()
+  // Keep existing users so login tokens remain valid; we'll upsert admin + test users.
 
-  console.log('👤 Creating admin user...')
-  const adminUser = await prisma.user.create({
-    data: {
+  console.log('👤 Ensuring admin user exists...')
+  const adminEmail = 'admin@khelwapas.com'
+  const adminPassword = await hashPassword('admin123')
+  const adminUser = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash: adminPassword, fullName: 'Admin User', role: 'admin' },
+    create: {
       fullName: 'Admin User',
-      email: 'admin@khelwapas.com',
-      passwordHash: await hashPassword('admin123'),
+      email: adminEmail,
+      passwordHash: adminPassword,
       role: 'admin'
     }
   })
+  console.log(`✅ Admin user ready: ${adminUser.email}`)
 
-  console.log('Creating mock product data...')
+  // Seed 10 normal users (idempotent via upsert)
+  console.log('👥 Seeding test users...')
+  const testUserPasswordHash = await hashPassword('user@123')
+  const testUsers: { fullName: string; email: string }[] = [
+    { fullName: 'Kashmira Shah', email: 'kashmira@gmail.com' },
+    { fullName: 'Rahul Sharma', email: 'rahul.sharma@gmail.com' },
+    { fullName: 'Priya Patel', email: 'priya.patel@gmail.com' },
+    { fullName: 'Amit Kumar', email: 'amit.kumar@gmail.com' },
+    { fullName: 'Sneha Gupta', email: 'sneha.gupta@gmail.com' },
+    { fullName: 'Vikash Singh', email: 'vikash.singh@gmail.com' },
+    { fullName: 'Anjali Mehta', email: 'anjali.mehta@gmail.com' },
+    { fullName: 'Rohan Joshi', email: 'rohan.joshi@gmail.com' },
+    { fullName: 'Kavya Reddy', email: 'kavya.reddy@gmail.com' },
+    { fullName: 'Arjun Nair', email: 'arjun.nair@gmail.com' }
+  ]
+  for (const u of testUsers) {
+    const created = await prisma.user.upsert({
+      where: { email: u.email },
+      update: { fullName: u.fullName, passwordHash: testUserPasswordHash, role: 'user' },
+      create: {
+        fullName: u.fullName,
+        email: u.email,
+        passwordHash: testUserPasswordHash,
+        role: 'user',
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+      }
+    })
+    console.log(`   • User ready: ${created.fullName} (${created.email})`)
+  }
+  console.log('✅ Test users seeded / updated.')
+
+  console.log('📦 Creating mock product data... (will recreate)')
   const mockProducts = [
     {
       name: 'Yonex Astrox 100 ZZ',
@@ -152,7 +190,15 @@ async function main() {
     });
   }
 
-  console.log('✅ Database seeded with admin user and mock products!')
+  console.log('✅ Database seeded with admin + test users and mock products!')
+  // Print counts for verification
+  const counts = await Promise.all([
+    prisma.user.count(),
+    prisma.product.count(),
+    prisma.order.count(),
+    prisma.sellRequest.count()
+  ])
+  console.log(`👥 Users: ${counts[0]} | 📦 Products: ${counts[1]} | 🧾 Orders: ${counts[2]} | 🛒 SellRequests: ${counts[3]}`)
 }
 
 main()
