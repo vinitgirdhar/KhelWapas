@@ -12,20 +12,20 @@ async function main() {
   await prisma.order.deleteMany();
   await prisma.sellRequest.deleteMany();
   // NOTE: Products are NOT deleted automatically anymore.
+  
+  console.log('🧹 Cleared orders and sell requests...')
 
   console.log('👤 Ensuring admin user exists...')
   const adminEmail = 'admin@khelwapas.com'
   const adminPassword = await hashPassword('admin123')
   const adminUser = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { passwordHash: adminPassword, fullName: 'Admin User', role: 'admin', status: 'Active', rating: 5 },
+    update: { passwordHash: adminPassword, fullName: 'Admin User', role: 'admin' },
     create: {
       fullName: 'Admin User',
       email: adminEmail,
       passwordHash: adminPassword,
-      role: 'admin',
-      status: 'Active',
-      rating: 5
+      role: 'admin'
     }
   })
   console.log(`✅ Admin user ready: ${adminUser.email}`)
@@ -48,20 +48,182 @@ async function main() {
   for (const u of testUsers) {
     const created = await prisma.user.upsert({
       where: { email: u.email },
-      update: { fullName: u.fullName, passwordHash: testUserPasswordHash, role: 'user', status: 'Active', rating: 5 },
+      update: { fullName: u.fullName, passwordHash: testUserPasswordHash, role: 'user' },
       create: {
         fullName: u.fullName,
         email: u.email,
         passwordHash: testUserPasswordHash,
         role: 'user',
-        status: 'Active',
-        rating: 5,
         createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
       }
     })
     console.log(`   • User ready: ${created.fullName} (${created.email})`)
   }
   console.log('✅ Test users seeded / updated.')
+
+  // Seed realistic orders and sell requests
+  console.log('📦 Seeding orders and sell requests...')
+  
+  const allUsers = await prisma.user.findMany({ where: { role: 'user' } })
+  const allProducts = await prisma.product.findMany({ where: { isAvailable: true } })
+  
+  if (allUsers.length > 0 && allProducts.length > 0) {
+    // Seed Orders - realistic data based on revenue analytics
+    const orderStatuses: ('Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled')[] = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
+    const pickupStatuses: ('Pending' | 'Scheduled' | 'In Progress' | 'Completed')[] = ['Pending', 'Scheduled', 'In Progress', 'Completed']
+    
+    const ordersToCreate = [
+      { userId: allUsers[0].id, productIndex: 0, totalPrice: 18500, orderStatus: 'Delivered', pickupStatus: 'Completed', daysAgo: 15 },
+      { userId: allUsers[1].id, productIndex: 1, totalPrice: 2500, orderStatus: 'Delivered', pickupStatus: 'Completed', daysAgo: 12 },
+      { userId: allUsers[2].id, productIndex: 2, totalPrice: 800, orderStatus: 'Shipped', pickupStatus: 'In Progress', daysAgo: 3 },
+      { userId: allUsers[3].id, productIndex: 3, totalPrice: 1500, orderStatus: 'Shipped', pickupStatus: 'Scheduled', daysAgo: 2 },
+      { userId: allUsers[4].id, productIndex: 4, totalPrice: 3200, orderStatus: 'Confirmed', pickupStatus: 'Scheduled', daysAgo: 1 },
+      { userId: allUsers[5].id, productIndex: 0, totalPrice: 18500, orderStatus: 'Pending', pickupStatus: 'Pending', daysAgo: 0 },
+      { userId: allUsers[6].id, productIndex: 1, totalPrice: 2500, orderStatus: 'Delivered', pickupStatus: 'Completed', daysAgo: 20 },
+      { userId: allUsers[7].id, productIndex: 2, totalPrice: 800, orderStatus: 'Delivered', pickupStatus: 'Completed', daysAgo: 18 },
+      { userId: allUsers[8].id, productIndex: 3, totalPrice: 1500, orderStatus: 'Cancelled', pickupStatus: 'Pending', daysAgo: 5 },
+      { userId: allUsers[1].id, productIndex: 4, totalPrice: 3200, orderStatus: 'Delivered', pickupStatus: 'Completed', daysAgo: 25 },
+    ]
+    
+    for (const orderData of ordersToCreate) {
+      const product = allProducts[orderData.productIndex % allProducts.length]
+      const createdAt = new Date(Date.now() - orderData.daysAgo * 24 * 60 * 60 * 1000)
+      
+      await prisma.order.create({
+        data: {
+          userId: orderData.userId,
+          items: JSON.stringify([{
+            productId: product.id,
+            productName: product.name,
+            quantity: 1,
+            price: Number(product.price),
+            image: Array.isArray(product.imageUrls) ? product.imageUrls[0] : '/images/products/background.jpg'
+          }]),
+          totalPrice: orderData.totalPrice,
+          paymentStatus: orderData.orderStatus === 'Cancelled' ? 'pending' : 'paid',
+          fulfillmentStatus: orderData.orderStatus,
+          createdAt,
+          updatedAt: createdAt
+        }
+      })
+    }
+    console.log(`   • Created ${ordersToCreate.length} orders`)
+    
+    // Seed Sell Requests - diverse statuses and items
+    const sellRequestsData = [
+      {
+        userId: allUsers[2].id,
+        fullName: allUsers[2].fullName,
+        email: allUsers[2].email,
+        category: 'Cricket',
+        title: 'SS Cricket Bat - Lightly Used',
+        description: 'SS Ton Gutsy English Willow bat in excellent condition. Used only for 5 matches. No cracks, well-maintained.',
+        price: 8500,
+        contactMethod: 'WhatsApp' as const,
+        contactDetail: '+91 98765 43210',
+        imageUrls: ['/images/products/background.jpg'],
+        status: 'Pending' as const,
+        daysAgo: 1
+      },
+      {
+        userId: allUsers[3].id,
+        fullName: allUsers[3].fullName,
+        email: allUsers[3].email,
+        category: 'Badminton',
+        title: 'Yonex Voltric Z-Force II',
+        description: 'Pre-owned Yonex racket. Strings need replacement but frame is in perfect condition. Original grip included.',
+        price: 6200,
+        contactMethod: 'Email' as const,
+        contactDetail: allUsers[3].email,
+        imageUrls: ['/images/products/background.jpg'],
+        status: 'Approved' as const,
+        daysAgo: 5
+      },
+      {
+        userId: allUsers[5].id,
+        fullName: allUsers[5].fullName,
+        email: allUsers[5].email,
+        category: 'Football',
+        title: 'Adidas Predator 19.1 FG - Size 9',
+        description: 'Used football boots, worn 10 times. Slight wear on studs but upper is like new. Comes with original box.',
+        price: 4500,
+        contactMethod: 'Phone' as const,
+        contactDetail: '+91 87654 32109',
+        imageUrls: ['/images/products/background.jpg'],
+        status: 'Pending' as const,
+        daysAgo: 2
+      },
+      {
+        userId: allUsers[6].id,
+        fullName: allUsers[6].fullName,
+        email: allUsers[6].email,
+        category: 'Tennis',
+        title: 'Wilson Pro Staff RF97 Autograph',
+        description: 'Excellent condition tennis racquet. Only used for 3 months. Comes with cover and original strings.',
+        price: 12000,
+        contactMethod: 'WhatsApp' as const,
+        contactDetail: '+91 76543 21098',
+        imageUrls: ['/images/products/background.jpg'],
+        status: 'Approved' as const,
+        daysAgo: 8
+      },
+      {
+        userId: allUsers[7].id,
+        fullName: allUsers[7].fullName,
+        email: allUsers[7].email,
+        category: 'Basketball',
+        title: 'Spalding TF-1000 Legacy Basketball',
+        description: 'Indoor basketball in good condition. Some grip wear but holds air perfectly. Great for training.',
+        price: 2800,
+        contactMethod: 'Email' as const,
+        contactDetail: allUsers[7].email,
+        imageUrls: ['/images/products/background.jpg'],
+        status: 'Rejected' as const,
+        daysAgo: 10
+      },
+      {
+        userId: allUsers[8].id,
+        fullName: allUsers[8].fullName,
+        email: allUsers[8].email,
+        category: 'Cricket',
+        title: 'MRF Genius Grand Edition Bat',
+        description: 'English willow bat with minor edge marks. Great for leather ball cricket. Professionally knocked-in.',
+        price: 15000,
+        contactMethod: 'WhatsApp' as const,
+        contactDetail: '+91 65432 10987',
+        imageUrls: ['/images/products/background.jpg'],
+        status: 'Pending' as const,
+        daysAgo: 0
+      }
+    ]
+    
+    for (const requestData of sellRequestsData) {
+      const createdAt = new Date(Date.now() - requestData.daysAgo * 24 * 60 * 60 * 1000)
+      
+      await prisma.sellRequest.create({
+        data: {
+          userId: requestData.userId,
+          fullName: requestData.fullName,
+          email: requestData.email,
+          category: requestData.category,
+          title: requestData.title,
+          description: requestData.description,
+          price: requestData.price,
+          contactMethod: requestData.contactMethod,
+          contactDetail: requestData.contactDetail,
+          imageUrls: JSON.stringify(requestData.imageUrls),
+          status: requestData.status,
+          createdAt,
+          updatedAt: createdAt
+        }
+      })
+    }
+    console.log(`   • Created ${sellRequestsData.length} sell requests`)
+  } else {
+    console.log('   ⚠️  Skipping orders/sell requests - no users or products available')
+  }
+  
+  console.log('✅ Orders and sell requests seeded.')
 
   const shouldSeedMocks = process.env.SEED_MOCK_PRODUCTS === 'true';
   if (shouldSeedMocks) {

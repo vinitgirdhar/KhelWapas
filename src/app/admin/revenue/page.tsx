@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DollarSign, Users, ShoppingCart, Package, Filter } from "lucide-react";
@@ -15,29 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-const revenueData = [
-  { month: 'Jan', revenue: 120000 },
-  { month: 'Feb', revenue: 150000 },
-  { month: 'Mar', revenue: 175000 },
-  { month: 'Apr', revenue: 210000 },
-  { month: 'May', revenue: 190000 },
-  { month: 'Jun', revenue: 230000 },
-];
-
-const salesTypeData = [
-  { name: 'Pre-Owned', value: 400, color: '#1E3A8A' },
-  { name: 'New Gear', value: 300, color: '#F97316' },
-  { name: 'Refurbished', value: 200, color: '#10B981' },
-];
-
-const recentSales = [
-  { id: 'ORD-001', customer: 'Priya Patel', type: 'Pre-Owned', status: 'Paid', date: '2024-07-28', amount: 8500 },
-  { id: 'ORD-002', customer: 'Amit Singh', type: 'New Gear', status: 'Paid', date: '2024-07-27', amount: 15000 },
-  { id: 'ORD-003', customer: 'Sneha Sharma', type: 'Refurbished', status: 'Pending', date: '2024-07-27', amount: 3200 },
-  { id: 'ORD-004', customer: 'Rohan Sharma', type: 'Pre-Owned', status: 'Paid', date: '2024-07-26', amount: 12000 },
-  { id: 'ORD-005', customer: 'Anjali Verma', type: 'New Gear', status: 'Cancelled', date: '2024-07-25', amount: 5500 },
-];
 
 const statusConfig: Record<string, string> = {
   Paid: 'bg-green-100 text-green-800',
@@ -60,6 +38,39 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 
 export default function AdminRevenuePage() {
+  const [loading, setLoading] = useState(true);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [salesTypeData, setSalesTypeData] = useState<any[]>([]);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [summary, setSummary] = useState({
+    totalRevenue: 0,
+    totalSales: 0,
+    newCustomers: 0,
+    itemsSold: 0,
+  });
+
+  useEffect(() => {
+    fetchRevenueData();
+  }, []);
+
+  const fetchRevenueData = async () => {
+    try {
+      const response = await fetch('/api/admin/revenue');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setRevenueData(result.data.revenueData);
+          setSalesTypeData(result.data.salesTypeData);
+          setRecentSales(result.data.recentSales);
+          setSummary(result.data.summary);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch revenue data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="flex-1 space-y-8 p-4 sm:p-8 pt-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -117,8 +128,8 @@ export default function AdminRevenuePage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹10,75,000</div>
-            <p className="text-xs text-muted-foreground">+15.2% from last month</p>
+            <div className="text-2xl font-bold">₹{summary.totalRevenue.toLocaleString('en-IN')}</div>
+            <p className="text-xs text-muted-foreground">All-time revenue</p>
           </CardContent>
         </Card>
         <Card>
@@ -127,8 +138,8 @@ export default function AdminRevenuePage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+950</div>
-            <p className="text-xs text-muted-foreground">+12.1% from last month</p>
+            <div className="text-2xl font-bold">+{summary.totalSales}</div>
+            <p className="text-xs text-muted-foreground">Total completed sales</p>
           </CardContent>
         </Card>
         <Card>
@@ -137,8 +148,8 @@ export default function AdminRevenuePage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+210</div>
-            <p className="text-xs text-muted-foreground">+25% this month</p>
+            <div className="text-2xl font-bold">+{summary.newCustomers}</div>
+            <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
         <Card>
@@ -147,8 +158,8 @@ export default function AdminRevenuePage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+1,205</div>
-            <p className="text-xs text-muted-foreground">+8.5% from last month</p>
+            <div className="text-2xl font-bold">+{summary.itemsSold}</div>
+            <p className="text-xs text-muted-foreground">Total items sold</p>
           </CardContent>
         </Card>
       </div>

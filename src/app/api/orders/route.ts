@@ -31,9 +31,35 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Transform orders to match the frontend Order type
+    const transformedOrders = orders.map((order) => {
+      const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
+      const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : {}
+
+      return {
+        id: order.id,
+        orderId: `ORD-${order.id.substring(0, 8).toUpperCase()}`,
+        customer: {
+          id: order.user.id,
+          name: order.user.fullName,
+          email: order.user.email,
+        },
+        product: {
+          id: firstItem.productId || order.id,
+          name: firstItem.productName || 'Unknown Product',
+          image: firstItem.image || '/images/products/background.jpg',
+        },
+        amount: Number(order.totalPrice),
+        orderStatus: order.fulfillmentStatus,
+        pickupStatus: getPickupStatus(order.fulfillmentStatus),
+        orderDate: order.createdAt.toISOString(),
+        items: items,
+      }
+    })
+
     return NextResponse.json({
       success: true,
-      orders
+      orders: transformedOrders
     })
   } catch (error) {
     console.error('Get orders error:', error)
@@ -41,6 +67,24 @@ export async function GET(request: NextRequest) {
       { success: false, message: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+// Helper function to determine pickup status based on order status
+function getPickupStatus(orderStatus: string): string {
+  switch (orderStatus) {
+    case 'Pending':
+      return 'Pending'
+    case 'Confirmed':
+      return 'Scheduled'
+    case 'Shipped':
+      return 'In Progress'
+    case 'Delivered':
+      return 'Completed'
+    case 'Cancelled':
+      return 'Pending'
+    default:
+      return 'Pending'
   }
 }
 

@@ -29,9 +29,20 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Transform the data to parse JSON fields
+    const transformedRequests = sellRequests.map(request => ({
+      ...request,
+      imageUrls: typeof request.imageUrls === 'string' 
+        ? JSON.parse(request.imageUrls) 
+        : request.imageUrls,
+      price: Number(request.price),
+      createdAt: request.createdAt.toISOString(),
+      updatedAt: request.updatedAt.toISOString()
+    }))
+
     return NextResponse.json({
       success: true,
-      sellRequests
+      sellRequests: transformedRequests
     })
   } catch (error) {
     console.error('Get sell requests error:', error)

@@ -60,13 +60,30 @@ export interface PasswordChangeData {
 
 export interface Order {
   id: string;
-  orderNumber: string;
-  date: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  total: number;
-  items: Array<{
+  orderId: string;
+  orderNumber?: string;
+  date?: string;
+  orderDate: string;
+  status?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  orderStatus: 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
+  pickupStatus: 'Pending' | 'Scheduled' | 'In Progress' | 'Completed';
+  customer: {
     id: string;
     name: string;
+    email: string;
+  };
+  product: {
+    id: string;
+    name: string;
+    image: string;
+  };
+  total?: number;
+  amount: number;
+  items: Array<{
+    id?: string;
+    productId?: string;
+    productName?: string;
+    name?: string;
     quantity: number;
     price: number;
     image: string;

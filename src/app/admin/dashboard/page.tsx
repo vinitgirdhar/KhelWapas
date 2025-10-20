@@ -30,23 +30,40 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
   const [currentSellRequests, setCurrentSellRequests] = useState<SellRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    revenue: { total: 0, change: 0 },
+    orders: { total: 0, change: 0 },
+    users: { total: 0, change: 0 },
+    products: { total: 0 }
+  });
 
   useEffect(() => {
-    fetchSellRequests();
+    fetchDashboardData();
   }, []);
 
-  const fetchSellRequests = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await fetch('/api/admin/sell-requests');
-      if (response.ok) {
-        const data = await response.json();
+      const [sellRequestsRes, statsRes] = await Promise.all([
+        fetch('/api/admin/sell-requests'),
+        fetch('/api/admin/stats')
+      ]);
+
+      if (sellRequestsRes.ok) {
+        const data = await sellRequestsRes.json();
         setCurrentSellRequests(data.sellRequests || []);
       }
+
+      if (statsRes.ok) {
+        const data = await statsRes.json();
+        if (data.success) {
+          setStats(data.stats);
+        }
+      }
     } catch (error) {
-      console.error('Error fetching sell requests:', error);
+      console.error('Error fetching dashboard data:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch sell requests",
+        description: "Failed to fetch dashboard data",
         variant: "destructive",
       });
     } finally {
@@ -94,6 +111,37 @@ export default function AdminDashboardPage() {
     updateSellRequestStatus(id, status);
   }
 
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  const formatChangePercent = (change: number) => {
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change.toFixed(1)}%`;
+  };
+
+  const getImageUrl = (imageUrls: any): string => {
+    if (!imageUrls) return '/images/products/background.jpg';
+    
+    // If it's already an array
+    if (Array.isArray(imageUrls)) {
+      return imageUrls[0] || '/images/products/background.jpg';
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof imageUrls === 'string') {
+      try {
+        const parsed = JSON.parse(imageUrls);
+        return Array.isArray(parsed) ? (parsed[0] || '/images/products/background.jpg') : '/images/products/background.jpg';
+      } catch {
+        // If it's not JSON, assume it's a direct URL
+        return imageUrls || '/images/products/background.jpg';
+      }
+    }
+    
+    return '/images/products/background.jpg';
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4">
@@ -110,9 +158,9 @@ export default function AdminDashboardPage() {
                 <BarChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹1,250,345</div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.revenue.total)}</div>
                 <p className="text-xs text-muted-foreground">
-                  +20.1% from last month
+                  {formatChangePercent(stats.revenue.change)} from last month
                 </p>
               </CardContent>
             </Card>
@@ -126,9 +174,9 @@ export default function AdminDashboardPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+2,350</div>
+                <div className="text-2xl font-bold">+{stats.users.total}</div>
                 <p className="text-xs text-muted-foreground">
-                  +180.1% from last month
+                  {formatChangePercent(stats.users.change)} from last month
                 </p>
               </CardContent>
             </Card>
@@ -140,9 +188,9 @@ export default function AdminDashboardPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+12,234</div>
+                <div className="text-2xl font-bold">+{stats.orders.total}</div>
                 <p className="text-xs text-muted-foreground">
-                  +19% from last month
+                  {formatChangePercent(stats.orders.change)} from last month
                 </p>
               </CardContent>
             </Card>
@@ -156,9 +204,9 @@ export default function AdminDashboardPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+573</div>
+                <div className="text-2xl font-bold">{stats.products.total}</div>
                 <p className="text-xs text-muted-foreground">
-                  +201 since last hour
+                  Available for sale
                 </p>
               </CardContent>
             </Card>
@@ -197,7 +245,7 @@ export default function AdminDashboardPage() {
                             <TableCell>
                                 <div className="flex items-start gap-4">
                                      <Image
-                                        src={request.imageUrls[0] || '/images/products/background.jpg'}
+                                        src={getImageUrl(request.imageUrls)}
                                         alt={request.title}
                                         width={64}
                                         height={64}

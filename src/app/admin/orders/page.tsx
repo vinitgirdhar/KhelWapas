@@ -50,6 +50,7 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
 }
 
+type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 
 const statusConfig: Record<OrderStatus, string> = {
     Pending: 'text-yellow-800 bg-yellow-100',
