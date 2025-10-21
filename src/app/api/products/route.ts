@@ -26,11 +26,18 @@ export async function GET(request: NextRequest) {
       where.isAvailable = true
     }
 
+    // Pagination support
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const skip = (page - 1) * limit
+
     const products = await prisma.product.findMany({
       where,
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: limit,
+      skip: skip
     })
 
     // Transform products to match the expected format

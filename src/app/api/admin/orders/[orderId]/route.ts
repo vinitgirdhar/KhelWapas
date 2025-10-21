@@ -17,14 +17,40 @@ export async function GET(
 
     const { orderId } = params
 
-    // Find order by the short orderId format (ORD-XXXXX)
+    // Extract the UUID from the short orderId format (ORD-XXXXX)
+    // We need to search by the prefix since we only store the full UUID
+    const idPrefix = orderId.replace('ORD-', '').toLowerCase()
+    
+    // Find order by the UUID prefix - use select instead of include for better performance
     const orders = await prisma.order.findMany({
-      include: {
-        user: true
+      where: {
+        id: {
+          startsWith: idPrefix
+        }
       },
+      select: {
+        id: true,
+        userId: true,
+        items: true,
+        totalPrice: true,
+        fulfillmentStatus: true,
+        paymentStatus: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            profilePicture: true
+          }
+        }
+      },
+      take: 1
     })
 
-    const order = orders.find(o => `ORD-${o.id.substring(0, 8).toUpperCase()}` === orderId)
+    const order = orders[0]
 
     if (!order) {
       return NextResponse.json(
@@ -38,10 +64,11 @@ export async function GET(
       where: { userId: order.userId }
     })
 
-    // Get user's addresses
+    // Get user's addresses - only fetch the default one
     const addresses = await prisma.address.findMany({
       where: { userId: order.userId },
-      orderBy: { isDefault: 'desc' }
+      orderBy: { isDefault: 'desc' },
+      take: 1
     })
 
     const shippingAddress = addresses[0] // Use first/default address

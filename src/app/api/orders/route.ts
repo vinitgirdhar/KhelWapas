@@ -15,9 +15,21 @@ export async function GET(request: NextRequest) {
     // Get orders for current user or all orders if admin
     const where = currentUser.role === 'admin' ? {} : { userId: currentUser.userId }
 
+    // Pagination support
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const skip = (page - 1) * limit
+
     const orders = await prisma.order.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        items: true,
+        totalPrice: true,
+        fulfillmentStatus: true,
+        createdAt: true,
         user: {
           select: {
             id: true,
@@ -28,7 +40,9 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: limit,
+      skip: skip
     })
 
     // Transform orders to match the frontend Order type

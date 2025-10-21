@@ -35,10 +35,12 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get sales by product type (from orders' items)
+    // Get sales by product type (from orders' items) - limit to recent orders for performance
     const allOrders = await prisma.order.findMany({
       where: { paymentStatus: 'paid' },
       select: { items: true },
+      take: 1000, // Limit to last 1000 paid orders for performance
+      orderBy: { createdAt: 'desc' }
     })
 
     const productTypeCounts = {
@@ -75,7 +77,12 @@ export async function GET(request: NextRequest) {
       where: { paymentStatus: 'paid' },
       take: 5,
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        items: true,
+        totalPrice: true,
+        paymentStatus: true,
+        createdAt: true,
         user: {
           select: {
             fullName: true,

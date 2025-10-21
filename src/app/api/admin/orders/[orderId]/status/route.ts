@@ -35,9 +35,20 @@ export async function PATCH(
       )
     }
 
-    // Find order by the short orderId format
-    const orders = await prisma.order.findMany()
-    const order = orders.find(o => `ORD-${o.id.substring(0, 8).toUpperCase()}` === orderId)
+    // Extract the UUID prefix from the short orderId format
+    const idPrefix = orderId.replace('ORD-', '').toLowerCase()
+    
+    // Find order by the UUID prefix
+    const orders = await prisma.order.findMany({
+      where: {
+        id: {
+          startsWith: idPrefix
+        }
+      },
+      take: 1
+    })
+    
+    const order = orders[0]
 
     if (!order) {
       return NextResponse.json(

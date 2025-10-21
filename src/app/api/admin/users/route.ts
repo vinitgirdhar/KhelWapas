@@ -13,6 +13,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Pagination support
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const skip = (page - 1) * limit
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -30,7 +36,9 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: limit,
+      skip: skip
     })
 
     return NextResponse.json({

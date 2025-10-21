@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
         { isDefault: 'desc' },
         { createdAt: 'desc' },
       ],
+      take: 20 // Limit to 20 payment methods
     });
 
     return NextResponse.json(paymentMethods);

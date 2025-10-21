@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
 
     const sellRequests = await prisma.sellRequest.findMany({
       where: { userId: currentUser.userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: 100 // Limit to most recent 100 requests
     })
 
     return NextResponse.json({ success: true, sellRequests })

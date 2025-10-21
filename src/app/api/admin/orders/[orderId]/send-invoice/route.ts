@@ -17,13 +17,28 @@ export async function POST(
 
     const { orderId } = params
 
-    // Find order by the short orderId format
+    // Extract the UUID prefix from the short orderId format
+    const idPrefix = orderId.replace('ORD-', '').toLowerCase()
+    
+    // Find order by the UUID prefix
     const orders = await prisma.order.findMany({
-      include: {
-        user: true
-      }
+      where: {
+        id: {
+          startsWith: idPrefix
+        }
+      },
+      select: {
+        id: true,
+        user: {
+          select: {
+            email: true
+          }
+        }
+      },
+      take: 1
     })
-    const order = orders.find(o => `ORD-${o.id.substring(0, 8).toUpperCase()}` === orderId)
+    
+    const order = orders[0]
 
     if (!order) {
       return NextResponse.json(

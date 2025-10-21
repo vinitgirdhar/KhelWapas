@@ -29,6 +29,9 @@ model User {
   paymentMethods  PaymentMethod[]
   reviews         Review[]
 
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -61,6 +64,11 @@ model Product {
 
   reviews         Review[]
 
+  @@index([category])
+  @@index([type])
+  @@index([isAvailable])
+  @@index([createdAt])
+  @@index([category, type, isAvailable])
   @@map("products")
 }
 
@@ -93,6 +101,9 @@ model SellRequest {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
   @@map("sell_requests")
 }
 
@@ -119,6 +130,12 @@ model Order {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([fulfillmentStatus])
+  @@index([createdAt])
+  @@index([userId, paymentStatus])
+  @@index([paymentStatus, createdAt])
   @@map("orders")
 }
 
@@ -143,6 +160,8 @@ model Address {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  @@index([userId])
+  @@index([userId, isDefault])
   @@map("addresses")
 }
 
@@ -165,6 +184,7 @@ model PaymentMethod {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
+  @@index([userId])
   @@map("payment_methods")
 }
 
@@ -195,6 +215,9 @@ model Review {
   reviewerName  String
   reviewerImage String?
 
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
   @@map("reviews")
 }
 

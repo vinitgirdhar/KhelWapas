@@ -13,9 +13,29 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Pagination support
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const skip = (page - 1) * limit
+
     // Get all sell requests with user information
     const sellRequests = await prisma.sellRequest.findMany({
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        fullName: true,
+        email: true,
+        category: true,
+        title: true,
+        description: true,
+        price: true,
+        contactMethod: true,
+        contactDetail: true,
+        imageUrls: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             id: true,
@@ -26,7 +46,9 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: limit,
+      skip: skip
     })
 
     // Transform the data to parse JSON fields
