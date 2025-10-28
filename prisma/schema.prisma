@@ -1,0 +1,227 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  fullName    String
+  email       String   @unique
+  phone       String?
+  profilePicture String?
+  passwordHash String
+  role        Role     @default(user)
+  status      UserStatus @default(Active)
+  rating      Int       @default(5)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sellRequests    SellRequest[]
+  orders          Order[]
+  addresses       Address[]
+  paymentMethods  PaymentMethod[]
+  reviews         Review[]
+
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum UserStatus {
+  Active
+  Blocked
+  Pending
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  name          String
+  category      String
+  type          ProductType
+  price         Decimal
+  originalPrice Decimal?
+  grade         Grade?
+  imageUrls     Json        // Array of image URLs stored as JSON
+  description   String
+  specs         Json?
+  badge         String?
+  isAvailable   Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  reviews         Review[]
+
+  @@index([category])
+  @@index([type])
+  @@index([isAvailable])
+  @@index([createdAt])
+  @@index([category, type, isAvailable])
+  @@map("products")
+}
+
+enum ProductType {
+  new
+  preowned
+}
+
+enum Grade {
+  A
+  B
+  C
+  D
+}
+
+model SellRequest {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  fullName      String
+  email         String
+  category      String
+  title         String
+  description   String
+  price         Decimal
+  contactMethod ContactMethod
+  contactDetail String?
+  imageUrls     Json          // Array of image URLs stored as JSON
+  status        RequestStatus @default(Pending)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sell_requests")
+}
+
+enum ContactMethod {
+  Email
+  Phone
+  WhatsApp
+}
+
+enum RequestStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  items             Json
+  totalPrice        Decimal
+  paymentStatus     PaymentStatus
+  fulfillmentStatus String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([fulfillmentStatus])
+  @@index([createdAt])
+  @@index([userId, paymentStatus])
+  @@index([paymentStatus, createdAt])
+  @@map("orders")
+}
+
+enum PaymentStatus {
+  paid
+  pending
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String   // e.g., "Home", "Office"
+  fullName    String
+  phone       String
+  street      String
+  city        String
+  state       String
+  postalCode  String
+  country     String   @default("India")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@map("addresses")
+}
+
+model PaymentMethod {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          PaymentType
+  // For cards - store last 4 digits only
+  cardLast4     String?
+  cardType      CardType?
+  cardHolder    String?
+  expiryMonth   Int?
+  expiryYear    Int?
+  // For UPI
+  upiId         String?
+  // Common fields
+  nickname      String?       // User-friendly name for the payment method
+  isDefault     Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@index([userId])
+  @@map("payment_methods")
+}
+
+enum PaymentType {
+  card
+  upi
+  netbanking
+  wallet
+}
+
+enum CardType {
+  visa
+  mastercard
+  rupay
+  amex
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  rating        Int
+  comment       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  reviewerName  String
+  reviewerImage String?
+
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+enum ReviewerType {
+  user
+  admin
+}

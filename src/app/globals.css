@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 228 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 10% 15%;
+    --primary: 228 65% 32%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 228 65% 32%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --lg-bg-color: rgba(255, 255, 255, 0.25);
+    --lg-highlight: rgba(255, 255, 255, 0.75);
+  }
+
+  .dark {
+    --background: 228 10% 10%;
+    --foreground: 0 0% 98%;
+    --card: 228 10% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 228 10% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 228 65% 32%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 25 95% 53%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Performance optimizations for smoother interactions */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Improve scrolling performance */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Optimize button and link interactions */
+  button, a {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Smooth transitions for interactive elements */
+  button, a, [role="button"] {
+    transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  }
+  
+  /* Active state for instant feedback */
+  button:active:not(:disabled), a:active {
+    transform: scale(0.98);
+    transition-duration: 0.05s;
+  }
+  
+  /* Prevent layout shift during loading */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@layer components {
+  .glass-container {
+    @apply relative bg-transparent overflow-hidden shadow-lg transition-all duration-300;
+  }
+
+  .glass-filter,
+  .glass-overlay,
+  .glass-specular {
+    @apply absolute inset-0;
+    border-radius: inherit;
+  }
+
+  .glass-filter {
+    z-index: 0;
+  pointer-events: none;
+    backdrop-filter: blur(4px);
+    filter: saturate(120%) brightness(1.15);
+  }
+
+  .glass-overlay {
+    z-index: 1;
+  pointer-events: none;
+    background: var(--lg-bg-color);
+  }
+
+  .glass-specular {
+    z-index: 2;
+  pointer-events: none;
+    box-shadow: inset 1px 1px 0 var(--lg-highlight),
+      inset 0 0 5px var(--lg-highlight);
+  }
+
+  .glass-content {
+    @apply relative z-[3];
+  /* Only the content should receive pointer events */
+  pointer-events: auto;
+  }
+}
