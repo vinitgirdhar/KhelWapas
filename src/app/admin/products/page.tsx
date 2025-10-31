@@ -70,7 +70,7 @@ export default function AdminProductsPage() {
     const fetchProducts = React.useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/products');
+            const response = await fetch('/api/products?limit=200');
             const data = await response.json();
             if (data.success) {
                 console.log('Fetched products:', data.products);

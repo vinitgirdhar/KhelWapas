@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const type = searchParams.get('type')
     const available = searchParams.get('available')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+  const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1)
+  const requestedLimit = parseInt(searchParams.get('limit') || '0', 10)
+  const limit = requestedLimit > 0 ? Math.min(requestedLimit, 500) : undefined
     
     timer.checkpoint('Parse params')
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       where.isAvailable = true
     }
 
-    const skip = (page - 1) * limit
+  const skip = limit ? (page - 1) * limit : undefined
 
     // OPTIMIZATION: Use select to fetch only required fields
     // This reduces data transfer and serialization overhead
@@ -88,8 +89,12 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc'
       },
-      take: limit,
-      skip: skip
+      ...(limit
+        ? {
+            take: limit,
+            skip: skip ?? 0
+          }
+        : {})
     })
 
     timer.checkpoint('Database query')
@@ -134,9 +139,9 @@ export async function GET(request: NextRequest) {
       products: transformedProducts,
       pagination: {
         page,
-        limit,
+        limit: limit ?? transformedProducts.length,
         total: transformedProducts.length,
-        hasMore: transformedProducts.length === limit
+        hasMore: limit ? transformedProducts.length === limit : false
       }
     }
 

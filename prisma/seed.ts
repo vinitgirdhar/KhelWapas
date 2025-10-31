@@ -232,24 +232,32 @@ async function main() {
   if (shouldSeedMocks) {
     console.log('📦 Creating mock product data (SEED_MOCK_PRODUCTS=true)...')
     const mockProducts = [
+    // ===========================
+    // ORIGINAL PRODUCTS WITH REAL IMAGES (7 items)
+    // ===========================
     {
       name: 'Yonex Astrox 100 ZZ',
       category: 'Badminton',
       type: 'new',
       price: 18500,
-      originalPrice: 22000,
-      description: 'The Astrox 100 ZZ is designed for advanced players seeking power and a steep-angled smash. Features a hyper-slim shaft and Rotational Generator System for ultimate control.',
+      originalPrice: null,
+      description: 'Professional badminton racket with Rotational Generator System for maximum power and control. Perfect for advanced players.',
       isAvailable: true,
-      imageUrls: ['/uploads/products/1758704389392-a3hqwomxjxg.jpg', '/uploads/products/1758704389393-53zj767bz9k.jpg'],
+      imageUrls: ['/uploads/products/badminton-racket-1.jpg', '/uploads/products/badminton-racket-2.jpg'],
       badge: 'Bestseller',
-      grade: 'A',
+      grade: null,
+      sku: 'BDM-RAC-YON-001',
       specs: {
-        'Flex': 'Extra Stiff',
-        'Frame': 'HM Graphite / Namd / Tungsten / Black Micro Core / Nanometric',
-        'Shaft': 'HM Graphite / Namd',
-        'Weight': '4U (Avg. 83g)',
+        'Brand': 'Yonex',
+        'Model': 'Astrox 100 ZZ',
+        'Weight': '4U (80-84g)',
         'Grip Size': 'G5',
-        'Color': 'Dark Navy'
+        'Flexibility': 'Stiff',
+        'Balance': 'Head Heavy',
+        'Material': 'HM Graphite / Namd',
+        'String Tension': 'Up to 30 lbs',
+        'Condition': 'Brand New',
+        'Stock': '15 units'
       }
     },
     {
@@ -257,18 +265,24 @@ async function main() {
       category: 'Cricket',
       type: 'new',
       price: 2500,
-      originalPrice: 3200,
-      description: 'A high-quality Kashmir Willow bat designed for club-level cricketers. Features a traditional shape with substantial edges for explosive power.',
+      originalPrice: null,
+      description: 'High-quality Kashmir Willow cricket bat from SG. Features thick edges and a balanced profile for powerful stroke play.',
       isAvailable: true,
-      imageUrls: ['/uploads/products/1758704397582-z3tvbxahbek.jpg', '/uploads/products/1758704476556-48bo0hzjms9.jpg'],
-      badge: 'New Arrival',
-      grade: 'B',
+      imageUrls: ['/uploads/products/cricket-bat-1.jpg', '/uploads/products/cricket-bat-2.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'CRK-BAT-SG-002',
       specs: {
-        'Willow': 'Kashmir Willow',
-        'Handle': 'Singapore Cane Handle',
-        'Grains': '5-7 Grains',
-        'Weight': '1180-1250 grams',
-        'Size': 'Short Handle (SH)'
+        'Brand': 'SG (Sanspareils Greenlands)',
+        'Model': 'Cobra Xtreme',
+        'Willow Type': 'Kashmir Willow',
+        'Handle': 'Cane Handle',
+        'Weight': '1100-1200 grams',
+        'Size': 'Full Size (Short Handle)',
+        'Blade Profile': 'Mid-Heavy',
+        'Edge Thickness': '35-38mm',
+        'Condition': 'Brand New',
+        'Stock': '30 units'
       }
     },
     {
@@ -276,89 +290,671 @@ async function main() {
       category: 'Football',
       type: 'new',
       price: 800,
-      originalPrice: 1100,
-      description: 'The Nivia Storm Football is a durable, all-weather ball suitable for training and matches on grass or artificial turf. Its 32-panel construction ensures true flight.',
+      originalPrice: null,
+      description: 'FIFA standard Size 5 football from Nivia. Perfect for match play and training with excellent durability and flight characteristics.',
       isAvailable: true,
-      imageUrls: ['/uploads/products/1758704860280-lno7vy9rapr.jpg', '/uploads/products/1758704900583-jhng6gnc2rr.jpg'],
-      badge: 'Best Value',
-      grade: 'C',
+      imageUrls: ['/uploads/products/football-1.jpg', '/uploads/products/football-2.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'FB-BALL-NIV-001',
       specs: {
-        'Material': 'Rubberized Stitched',
-        'Panels': '32 Panels',
-        'Size': '5',
-        'Bladder': 'Latex Bladder',
-        'Use': 'Training/Recreational'
+        'Brand': 'Nivia',
+        'Model': 'Storm',
+        'Size': '5 (Official)',
+        'Material': 'PU Synthetic Leather',
+        'Bladder': 'Butyl Bladder',
+        'Panels': '32 Hand-Stitched Panels',
+        'Weight': '410-450 grams',
+        'Circumference': '68-70 cm',
+        'Condition': 'Brand New',
+        'Stock': '50 units'
       }
     },
     {
       name: 'Spalding NBA Zi/O Excel Basketball',
       category: 'Basketball',
       type: 'preowned',
-      price: 1500,
-      originalPrice: 2800,
-      description: 'A pre-owned Spalding Zi/O Excel basketball with excellent grip and feel. Ideal for indoor and outdoor play. Shows minor signs of use but in great condition.',
+      price: 3200,
+      originalPrice: 5000,
+      description: 'Official NBA indoor basketball in excellent condition. Shows minimal wear with great grip and bounce retention.',
       isAvailable: true,
-      imageUrls: ['/uploads/products/1758705025886-byvrb9rmi69.jpg', '/uploads/products/1758705262035-siy1v7l5ngr.jpg'],
-      badge: 'Bestseller',
-      grade: 'B',
+      imageUrls: ['/uploads/products/basketball-1.jpg', '/uploads/products/basketball-2.jpg'],
+      badge: 'Inspected',
+      grade: 'A',
+      sku: 'BKB-BALL-SPA-001',
       specs: {
-        'Material': 'Zi/O Composite Leather',
-        'Size': '7',
-        'Feel': 'Soft, tacky feel',
-        'Use': 'Indoor/Outdoor',
-        'Condition': 'Used - Grade B'
+        'Brand': 'Spalding',
+        'Model': 'NBA Zi/O Excel',
+        'Size': '7 (Official Men\'s)',
+        'Material': 'Composite Leather',
+        'Surface': 'Indoor',
+        'Weight': '600 grams',
+        'Circumference': '75 cm',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '12 units'
       }
     },
     {
-        name: 'Wilson Tour Slam Lite Tennis Racquet',
-        category: 'Tennis',
-        type: 'new',
-        price: 3200,
-        originalPrice: 4500,
-        description: 'The Wilson Tour Slam Lite is perfect for beginners and recreational players. Its oversized head provides a larger sweet spot, and V-Matrix technology offers more power.',
-        isAvailable: true,
-        imageUrls: ['/uploads/products/1758705569512-nikx8k3r4g.jpg', '/uploads/products/1758705875862-zleju5xvyo.jpg'],
-        badge: 'New Arrival',
-        grade: 'B',
-        specs: {
-            'Head Size': '112 sq. in.',
-            'Strung Weight': '10.3 oz / 291 g',
-            'Length': '27.5 in',
-            'String Pattern': '16x19',
-            'Grip Size': '4 3/8"'
-        }
+      name: 'Wilson Tour Slam Lite Tennis Racquet',
+      category: 'Tennis',
+      type: 'new',
+      price: 1500,
+      originalPrice: null,
+      description: 'Lightweight tennis racquet perfect for beginners and recreational players. Great balance of power and control.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/tennis-racket-1.jpg', '/uploads/products/tennis-racket-2.jpg'],
+      badge: 'Best Value',
+      grade: null,
+      sku: 'TEN-RAC-WIL-001',
+      specs: {
+        'Brand': 'Wilson',
+        'Model': 'Tour Slam Lite',
+        'Head Size': '110 sq in',
+        'Weight': '280 grams (Unstrung)',
+        'Grip Size': '4 3/8"',
+        'Length': '27.5 inches',
+        'String Pattern': '16x19',
+        'Material': 'Volcanic Frame',
+        'Condition': 'Brand New',
+        'Stock': '20 units'
+      }
     },
     {
-        name: 'Cosco Sprint 66 Nylon Shuttlecock',
-        category: 'Badminton',
-        type: 'new',
-        price: 450,
-        originalPrice: 550,
-        description: 'A pack of 6 durable nylon shuttlecocks from Cosco. Ideal for practice and club play, offering consistent flight and good durability.',
-        isAvailable: true,
-        imageUrls: ['/uploads/products/1758706675360-xnsz54k5czm.jpg', '/uploads/products/1758707146288-syuv5pjmes7.jpg'],
-        badge: 'Best Value',
-        grade: 'C',
-        specs: {
-            'Type': 'Nylon',
-            'Speed': 'Medium',
-            'Base': 'Cork',
-            'Quantity': '6 Shuttles',
-            'Color': 'Yellow'
-        }
+      name: 'Cosco Sprint 66 Nylon Shuttlecock',
+      category: 'Badminton',
+      type: 'new',
+      price: 350,
+      originalPrice: null,
+      description: 'Pack of 6 durable nylon shuttlecocks for recreational and practice play. Long-lasting and consistent flight.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/shuttlecock-1.jpg', '/uploads/products/shuttlecock-2.jpg'],
+      badge: 'Best Value',
+      grade: null,
+      sku: 'BDM-SHU-COS-001',
+      specs: {
+        'Brand': 'Cosco',
+        'Model': 'Sprint 66',
+        'Type': 'Nylon Shuttlecock',
+        'Pack Size': '6 pieces',
+        'Speed': 'Medium',
+        'Durability': 'High',
+        'Base': 'Cork Base',
+        'Skirt': 'Nylon',
+        'Condition': 'Brand New',
+        'Stock': '100 packs'
+      }
+    },
+    {
+      name: 'MRF Genius Grand Edition Bat',
+      category: 'Cricket',
+      type: 'preowned',
+      price: 15000,
+      originalPrice: 22000,
+      description: 'Premium English Willow cricket bat from MRF. Professional-grade bat with excellent pickup and balance. Lightly used with minimal wear.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/mrf-bat-1.jpg', '/uploads/products/mrf-bat-2.jpg'],
+      badge: 'Inspected',
+      grade: 'A',
+      sku: 'CRK-BAT-MRF-003',
+      specs: {
+        'Brand': 'MRF',
+        'Model': 'Genius Grand Edition',
+        'Willow Type': 'English Willow',
+        'Grade': 'Grade 1',
+        'Handle': 'Premium Sarawak Cane',
+        'Weight': '1180-1220 grams',
+        'Size': 'Full Size (Short Handle)',
+        'Grains': '10-12 Straight Grains',
+        'Edge Thickness': '38-42mm',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '8 units'
+      }
+    },
+
+    // ===========================
+    // NEW CRICKET EQUIPMENT (8 items)
+    // ===========================
+    {
+      name: 'English Willow Bat',
+      category: 'Cricket',
+      type: 'preowned',
+      price: 5950,
+      originalPrice: 9999,
+      description: 'Premium English Willow cricket bat in excellent playing condition. Features superior grain structure and perfect balance for professional-level performance. Ideal for leather ball cricket.',
+      isAvailable: true,
+      imageUrls: ['/images/products/background.jpg'],
+      badge: 'Inspected',
+      grade: 'B',
+      sku: 'CRK-BAT-EW-001',
+      specs: {
+        'Willow Type': 'English Willow',
+        'Grade': 'Grade 2',
+        'Handle': 'Premium Cane Handle',
+        'Weight': '1150-1200 grams',
+        'Size': 'Full Size (Short Handle)',
+        'Grains': '8-10 Straight Grains',
+        'Condition': 'Pre-Owned - Grade B',
+        'Stock': '25 units'
+      }
+    },
+    {
+      name: 'Kashmir Willow Bat',
+      category: 'Cricket',
+      type: 'new',
+      price: 3500,
+      originalPrice: null,
+      description: 'Brand new Kashmir Willow cricket bat perfect for club-level and amateur cricket. Well-balanced design with good pickup and traditional shape. Ready to play after light knocking.',
+      isAvailable: true,
+      imageUrls: ['/images/products/background.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'CRK-BAT-KW-002',
+      specs: {
+        'Willow Type': 'Kashmir Willow',
+        'Handle': 'Cane Handle',
+        'Weight': '1180-1250 grams',
+        'Size': 'Full Size',
+        'Grains': '5-7 Grains',
+        'Condition': 'Brand New',
+        'Stock': '40 units'
+      }
+    },
+    {
+      name: 'Tennis Ball Cricket Ball',
+      category: 'Cricket',
+      type: 'preowned',
+      price: 212,
+      originalPrice: 350,
+      description: 'High-quality tennis balls suitable for street and practice cricket. Durable rubber construction with excellent bounce. Pack includes premium quality balls in good playing condition.',
+      isAvailable: true,
+      imageUrls: ['/images/products/background.jpg'],
+      badge: 'Best Value',
+      grade: 'A',
+      sku: 'CRK-BALL-TN-003',
+      specs: {
+        'Type': 'Tennis Cricket Ball',
+        'Material': 'Rubber',
+        'Bounce': 'High',
+        'Durability': 'Excellent',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '100 units'
+      }
+    },
+    {
+      name: 'Leather Cricket Ball',
+      category: 'Cricket',
+      type: 'new',
+      price: 1200,
+      originalPrice: null,
+      description: 'Premium quality leather cricket ball for professional matches and tournaments. Four-piece construction with excellent seam strength. Conforms to international cricket standards.',
+      isAvailable: true,
+      imageUrls: ['/images/products/background.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'CRK-BALL-LT-004',
+      specs: {
+        'Type': 'Leather Ball',
+        'Weight': '155-163 grams',
+        'Color': 'Red',
+        'Construction': '4-Piece',
+        'Standard': 'Match Quality',
+        'Condition': 'Brand New',
+        'Stock': '30 units'
+      }
+    },
+    {
+      name: 'Batting Gloves',
+      category: 'Cricket',
+      type: 'preowned',
+      price: 990,
+      originalPrice: 2200,
+      description: 'Professional cricket batting gloves with excellent protection and flexibility. Features high-density foam padding and comfortable leather palm. Shows minor wear but fully functional.',
+      isAvailable: true,
+      imageUrls: ['/images/products/background.jpg'],
+      badge: 'Refurbished',
+      grade: 'C',
+      sku: 'CRK-GLOVE-BAT-005',
+      specs: {
+        'Material': 'Leather Palm',
+        'Protection': 'High-Density Foam',
+        'Finger': 'Pre-curved',
+        'Wrist': 'Adjustable Strap',
+        'Size': 'Medium/Large',
+        'Condition': 'Pre-Owned - Grade C',
+        'Stock': '45 units'
+      }
+    },
+    {
+      name: 'Cricket Leg Pads',
+      category: 'Cricket',
+      type: 'preowned',
+      price: 1750,
+      originalPrice: 3000,
+      description: 'High-quality cricket leg guards with superior protection and lightweight design. Three-section construction for better movement. Suitable for both amateur and professional players.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/cricket-leg-pads-1.jpg', '/uploads/products/cricket-leg-pads-2.jpg'],
+      badge: 'Inspected',
+      grade: 'B',
+      sku: 'CRK-PADS-LEG-006',
+      specs: {
+        'Type': 'Leg Guards',
+        'Sections': '3-Section',
+        'Material': 'PU + High-Density Foam',
+        'Knee Protection': 'Extra Padding',
+        'Size': 'Adult',
+        'Condition': 'Pre-Owned - Grade B',
+        'Stock': '35 units'
+      }
+    },
+    {
+      name: 'Abdominal Guard (Cricket Box)',
+      category: 'Cricket',
+      type: 'new',
+      price: 1500,
+      originalPrice: null,
+      description: 'Essential protective gear for cricket. Ergonomic design with comfortable fit and maximum protection. Made from high-impact resistant material with soft inner lining.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/abdominal-guard-1.jpg', '/uploads/products/abdominal-guard-2.jpg'],
+      badge: null,
+      grade: null,
+      sku: 'CRK-GUARD-ABD-007',
+      specs: {
+        'Type': 'Abdominal Guard',
+        'Material': 'High-Impact Plastic',
+        'Lining': 'Soft Cotton',
+        'Size': 'Adult (Adjustable)',
+        'Condition': 'Brand New',
+        'Stock': '50 units'
+      }
+    },
+    {
+      name: 'Cricket Helmet',
+      category: 'Cricket',
+      type: 'preowned',
+      price: 2975,
+      originalPrice: 4500,
+      description: 'Professional cricket helmet with titanium grille and superior impact protection. Comfortable padding and adjustable fit. Meets international safety standards.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/cricket-helmet-1.jpg', '/uploads/products/cricket-helmet-2.jpg'],
+      badge: 'Inspected',
+      grade: 'A',
+      sku: 'CRK-HELMET-001',
+      specs: {
+        'Grille': 'Titanium',
+        'Shell': 'High-Impact ABS',
+        'Padding': 'Multi-Layer Foam',
+        'Ventilation': 'Air Flow System',
+        'Size': 'Adjustable (M-L)',
+        'Standard': 'ICC Approved',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '28 units'
+      }
+    },
+    
+    // ===========================
+    // FOOTBALL EQUIPMENT (4 items)
+    // ===========================
+    {
+      name: 'Football - Size 3',
+      category: 'Football',
+      type: 'preowned',
+      price: 480,
+      originalPrice: 1500,
+      description: 'Size 3 football ideal for young players and training. Durable construction with good grip. Shows signs of use but maintains excellent bounce and shape.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/football-size3-1.jpg', '/uploads/products/football-size3-2.jpg'],
+      badge: 'Best Value',
+      grade: 'D',
+      sku: 'FB-BALL-S3-016',
+      specs: {
+        'Size': '3',
+        'Material': 'Synthetic Leather',
+        'Bladder': 'Butyl',
+        'Panels': '32 Panels',
+        'Use': 'Training/Kids',
+        'Condition': 'Pre-Owned - Grade D',
+        'Stock': '50 units'
+      }
+    },
+    {
+      name: 'Football - Size 4',
+      category: 'Football',
+      type: 'new',
+      price: 1500,
+      originalPrice: null,
+      description: 'Brand new Size 4 football perfect for youth players. Professional-grade construction with excellent flight characteristics and durability.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/football-size4-1.jpg', '/uploads/products/football-size4-2.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'FB-BALL-S4-017',
+      specs: {
+        'Size': '4',
+        'Material': 'PU Leather',
+        'Bladder': 'Latex',
+        'Panels': '32 Panels',
+        'Use': 'Match/Training',
+        'Condition': 'Brand New',
+        'Stock': '45 units'
+      }
+    },
+    {
+      name: 'Football - Size 5',
+      category: 'Football',
+      type: 'preowned',
+      price: 1750,
+      originalPrice: 3200,
+      description: 'Professional Size 5 football in excellent playing condition. Premium quality with superior touch and control. Suitable for competitive matches and serious training.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/football-size5-1.jpg', '/uploads/products/football-size5-2.jpg'],
+      badge: 'Inspected',
+      grade: 'B',
+      sku: 'FB-BALL-S5-018',
+      specs: {
+        'Size': '5',
+        'Material': 'Premium PU Leather',
+        'Bladder': 'Latex',
+        'Panels': '32 Hand-Stitched',
+        'Use': 'Professional Match',
+        'Weight': '410-450g',
+        'Condition': 'Pre-Owned - Grade B',
+        'Stock': '30 units'
+      }
+    },
+    {
+      name: 'Football Boots',
+      category: 'Football',
+      type: 'preowned',
+      price: 2475,
+      originalPrice: 5900,
+      description: 'High-performance football boots with excellent traction and comfort. Designed for firm ground play. Shows moderate wear but still offers great performance.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/football-boots-1.jpg', '/uploads/products/football-boots-2.jpg'],
+      badge: 'Refurbished',
+      grade: 'C',
+      sku: 'FB-BOOTS-021',
+      specs: {
+        'Type': 'Firm Ground (FG)',
+        'Upper': 'Synthetic Leather',
+        'Sole': 'Molded Studs',
+        'Size Range': 'UK 7-10',
+        'Fit': 'Regular',
+        'Condition': 'Pre-Owned - Grade C',
+        'Stock': '40 units'
+      }
+    },
+    
+    // ===========================
+    // BASKETBALL EQUIPMENT (2 items)
+    // ===========================
+    {
+      name: 'Basketball - Indoor',
+      category: 'Basketball',
+      type: 'new',
+      price: 2500,
+      originalPrice: null,
+      description: 'Premium indoor basketball with superior grip and consistent bounce. Perfect for competitive play and training. Features composite leather construction for excellent feel.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/basketball-indoor-1.jpg', '/uploads/products/basketball-indoor-2.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'BK-BALL-IN-026',
+      specs: {
+        'Type': 'Indoor',
+        'Size': '7',
+        'Material': 'Composite Leather',
+        'Panels': '8-Panel',
+        'Grip': 'Deep Channel Design',
+        'Condition': 'Brand New',
+        'Stock': '40 units'
+      }
+    },
+    {
+      name: 'Basketball Shoes',
+      category: 'Basketball',
+      type: 'preowned',
+      price: 3570,
+      originalPrice: 5500,
+      description: 'High-performance basketball shoes with excellent ankle support and cushioning. Designed for explosive movements and maximum court grip. Gently used with plenty of life left.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/basketball-shoes-1.jpg', '/uploads/products/basketball-shoes-2.jpg'],
+      badge: 'Inspected',
+      grade: 'A',
+      sku: 'BK-SHOES-030',
+      specs: {
+        'Type': 'High-Top',
+        'Cushioning': 'Air Cushion',
+        'Traction': 'Herringbone Pattern',
+        'Upper': 'Mesh + Synthetic',
+        'Size Range': 'US 8-12',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '45 units'
+      }
+    },
+    
+    // ===========================
+    // TENNIS EQUIPMENT (1 item)
+    // ===========================
+    {
+      name: 'Tennis Racket',
+      category: 'Tennis',
+      type: 'preowned',
+      price: 4550,
+      originalPrice: 8500,
+      description: 'Professional tennis racket with excellent power and control. Lightweight frame with large sweet spot. Strung and ready to play. Perfect for intermediate to advanced players.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/tennis-racket-pro-1.jpg', '/uploads/products/tennis-racket-pro-2.jpg'],
+      badge: 'Inspected',
+      grade: 'B',
+      sku: 'TEN-RACKET-033',
+      specs: {
+        'Head Size': '100 sq. in.',
+        'Weight': '300g (Strung)',
+        'Length': '27 inches',
+        'String Pattern': '16x19',
+        'Grip Size': '4 3/8"',
+        'Balance': 'Even',
+        'Condition': 'Pre-Owned - Grade B',
+        'Stock': '25 units'
+      }
+    },
+    
+    // ===========================
+    // BADMINTON EQUIPMENT (1 item)
+    // ===========================
+    {
+      name: 'Badminton Racket',
+      category: 'Badminton',
+      type: 'preowned',
+      price: 1320,
+      originalPrice: 3300,
+      description: 'Lightweight badminton racket suitable for recreational and intermediate players. Good string tension and frame integrity. Shows cosmetic wear but plays well.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/badminton-racket-pro-1.jpg', '/uploads/products/badminton-racket-pro-2.jpg'],
+      badge: null,
+      grade: 'D',
+      sku: 'BD-RACKET-040',
+      specs: {
+        'Weight': '85-89g',
+        'Flex': 'Medium',
+        'Balance': 'Even',
+        'String Tension': '20-24 lbs',
+        'Grip Size': 'G4',
+        'Condition': 'Pre-Owned - Grade D',
+        'Stock': '50 units'
+      }
+    },
+    
+    // ===========================
+    // HOCKEY EQUIPMENT (1 item)
+    // ===========================
+    {
+      name: 'Hockey Stick - Field',
+      category: 'Hockey',
+      type: 'new',
+      price: 3500,
+      originalPrice: null,
+      description: 'Brand new field hockey stick with excellent balance and power. Composite construction for durability and performance. Suitable for competitive play.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/hockey-stick-1.jpg', '/uploads/products/hockey-stick-2.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'HK-STICK-F-048',
+      specs: {
+        'Type': 'Field Hockey',
+        'Material': 'Composite (Fiberglass)',
+        'Length': '36.5 inches',
+        'Weight': '520-540g',
+        'Bow': '24mm Low Bow',
+        'Condition': 'Brand New',
+        'Stock': '30 units'
+      }
+    },
+    
+    // ===========================
+    // TABLE TENNIS EQUIPMENT (1 item)
+    // ===========================
+    {
+      name: 'Table Tennis Bat / Paddle',
+      category: 'Table Tennis',
+      type: 'preowned',
+      price: 1375,
+      originalPrice: 3200,
+      description: 'Quality table tennis bat with good spin and control. Rubber in decent condition with some wear. Great for club-level and recreational play.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/table-tennis-bat-1.jpg', '/uploads/products/table-tennis-bat-2.jpg'],
+      badge: 'Refurbished',
+      grade: 'C',
+      sku: 'TT-BAT-057',
+      specs: {
+        'Blade': '5-Ply Wood',
+        'Rubber': 'Inverted',
+        'Sponge': '2.0mm',
+        'Handle': 'Flared',
+        'Speed': 'Medium-Fast',
+        'Condition': 'Pre-Owned - Grade C',
+        'Stock': '45 units'
+      }
+    },
+    
+    // ===========================
+    // VOLLEYBALL EQUIPMENT (1 item)
+    // ===========================
+    {
+      name: 'Volleyball',
+      category: 'Volleyball',
+      type: 'preowned',
+      price: 1700,
+      originalPrice: 2600,
+      description: 'Professional volleyball in excellent playing condition. Soft touch with consistent flight. Perfect for indoor competitive play and training sessions.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/volleyball-1.jpg', '/uploads/products/volleyball-2.jpg'],
+      badge: 'Inspected',
+      grade: 'A',
+      sku: 'VB-BALL-063',
+      specs: {
+        'Type': 'Indoor',
+        'Material': 'Synthetic Leather',
+        'Panels': '18 Panels',
+        'Circumference': '65-67 cm',
+        'Weight': '260-280g',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '50 units'
+      }
+    },
+    
+    // ===========================
+    // ATHLETICS / FITNESS (1 item)
+    // ===========================
+    {
+      name: 'Dumbbells / Kettlebells Set',
+      category: 'Fitness',
+      type: 'new',
+      price: 8500,
+      originalPrice: null,
+      description: 'Complete dumbbell and kettlebell set for home gym. Includes multiple weight options with durable cast iron construction. Perfect for strength training and fitness.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/dumbbells-set-1.jpg', '/uploads/products/dumbbells-set-2.jpg'],
+      badge: 'Bestseller',
+      grade: null,
+      sku: 'AF-DUMBBELL-069',
+      specs: {
+        'Type': 'Dumbbell + Kettlebell Set',
+        'Material': 'Cast Iron',
+        'Weights': '2kg, 4kg, 6kg, 8kg, 10kg',
+        'Coating': 'Vinyl Coating',
+        'Handles': 'Ergonomic Grip',
+        'Condition': 'Brand New',
+        'Stock': '30 units'
+      }
+    },
+    
+    // ===========================
+    // MARTIAL ARTS (1 item)
+    // ===========================
+    {
+      name: 'Boxing Gloves',
+      category: 'Boxing',
+      type: 'preowned',
+      price: 2450,
+      originalPrice: 4500,
+      description: 'Professional boxing gloves with excellent padding and wrist support. Suitable for training and sparring. Shows minor wear but maintains structural integrity.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/boxing-gloves-1.jpg', '/uploads/products/boxing-gloves-2.jpg'],
+      badge: 'Inspected',
+      grade: 'B',
+      sku: 'MA-GLOVE-078',
+      specs: {
+        'Weight': '12 oz',
+        'Material': 'Synthetic Leather',
+        'Padding': 'Multi-Layer Foam',
+        'Closure': 'Velcro Strap',
+        'Use': 'Training/Sparring',
+        'Condition': 'Pre-Owned - Grade B',
+        'Stock': '40 units'
+      }
+    },
+    
+    // ===========================
+    // ARCHERY (1 item)
+    // ===========================
+    {
+      name: 'Recurve Bow',
+      category: 'Archery',
+      type: 'preowned',
+      price: 6375,
+      originalPrice: 9800,
+      description: 'Professional recurve bow perfect for target archery and competitions. Excellent draw weight and accuracy. Includes sight and stabilizer. Well-maintained and ready to use.',
+      isAvailable: true,
+      imageUrls: ['/uploads/products/recurve-bow-1.jpg', '/uploads/products/recurve-bow-2.jpg'],
+      badge: 'Inspected',
+      grade: 'A',
+      sku: 'AR-BOW-REC-085',
+      specs: {
+        'Type': 'Recurve Bow',
+        'Draw Weight': '30-40 lbs',
+        'Length': '66-70 inches',
+        'Material': 'Carbon/Fiberglass Composite',
+        'Riser': 'Aluminum Alloy',
+        'Accessories': 'Sight + Stabilizer',
+        'Condition': 'Pre-Owned - Grade A',
+        'Stock': '20 units'
+      }
     }
     ]
 
-    for (const product of mockProducts) {
+      for (const product of mockProducts) {
       // Only create if a product with same name doesn't already exist
       const exists = await prisma.product.findFirst({ where: { name: product.name } });
       if (!exists) {
+        // Remove sku field as it doesn't exist in the schema
+        const { sku, ...productData } = product as any;
         await prisma.product.create({
           data: {
-            ...product,
-            type: product.type as 'new' | 'preowned',
-            grade: product.grade as 'A' | 'B' | 'C' | 'D',
-            specs: product.specs || {},
+            ...productData,
+            type: productData.type as 'new' | 'preowned',
+            grade: productData.grade as 'A' | 'B' | 'C' | 'D' | null,
+            specs: productData.specs || {},
           },
         });
         console.log(`   • Mock product added: ${product.name}`);
