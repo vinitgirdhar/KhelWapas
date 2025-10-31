@@ -49,7 +49,7 @@ function LoginPageInner() {
 
   async function onSubmit(data: LoginFormValues) {
     setLoading(true);
-    
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -69,7 +69,7 @@ function LoginPageInner() {
           email: result.user.email,
           role: result.user.role,
         }));
-        
+
         window.dispatchEvent(new Event('storage'));
 
         toast({
@@ -84,7 +84,7 @@ function LoginPageInner() {
             if (intent.product && intent.quantity) {
               addItem({ ...intent.product, quantity: intent.quantity });
             }
-          } catch {}
+          } catch { }
           clearPurchaseIntent();
           if (intent.action === 'buy' || intent.action === 'checkout') {
             router.push('/checkout');

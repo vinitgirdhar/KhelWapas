@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { addressDAL } from '@/lib/dal';
 
 // GET /api/profile/addresses - Get user addresses
 export async function GET(request: NextRequest) {
@@ -10,13 +10,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const addresses = await prisma.address.findMany({
+    const addresses = addressDAL.findMany({
       where: { userId },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      take: 20, // Limit to 20 addresses per user
+      orderBy: { createdAt: 'desc' }
     });
 
     return NextResponse.json(addresses);
@@ -38,14 +34,13 @@ export async function POST(request: NextRequest) {
 
     // If this is set as default, unset all other default addresses for this user
     if (isDefault) {
-      await prisma.address.updateMany({
-        where: { userId },
-        data: { isDefault: false },
-      });
+      addressDAL.updateMany(
+        { userId, isDefault: 1 },
+        { isDefault: 0 }
+      );
     }
 
-    const newAddress = await prisma.address.create({
-      data: {
+    const newAddress = addressDAL.create({
         userId,
         title,
         fullName,
@@ -55,9 +50,9 @@ export async function POST(request: NextRequest) {
         state,
         postalCode,
         country,
-        isDefault,
-      },
-    });
+        isDefault: isDefault ? 1 : 0,
+      }
+    );
 
     return NextResponse.json(newAddress, { status: 201 });
   } catch (error) {

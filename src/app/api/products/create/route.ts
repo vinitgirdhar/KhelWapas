@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { productDAL } from '@/lib/dal';
 import { normalizeMany } from '@/lib/image';
 import { cache } from '@/lib/cache';
 import { z } from 'zod';
@@ -44,25 +44,25 @@ export async function POST(request: NextRequest) {
 
     // Create product in database
     console.log('[API] Attempting to create product in database...');
-    const product = await prisma.product.create({
-      data: {
+    const product = productDAL.create({
         name: data.name,
         category: data.category,
         type: data.type,
-        price: data.price,
-        originalPrice: data.originalPrice,
+        price: data.price.toString(),
+        originalPrice: data.originalPrice?.toString() || null,
         description: data.description,
-        imageUrls: data.imageUrls || [],
-        badge: data.badge,
-        grade: data.grade,
-        specs: data.specs || {},
-        isAvailable: data.isAvailable,
-      },
-    });
+        imageUrls: JSON.stringify(data.imageUrls || []),
+        badge: data.badge || null,
+        grade: data.grade || null,
+        specs: JSON.stringify(data.specs || {}),
+        isAvailable: data.isAvailable ? 1 : 0,
+      }
+    );
     console.log('[API] Product created in database:', product.id);
 
     // Transform to match frontend format
-    const normImages = Array.isArray(product.imageUrls) ? normalizeMany(product.imageUrls as any) : [];
+    const imageUrlsArray = typeof product.imageUrls === 'string' ? JSON.parse(product.imageUrls) : product.imageUrls;
+    const normImages = Array.isArray(imageUrlsArray) ? normalizeMany(imageUrlsArray as any) : [];
     const transformedProduct = {
       id: product.id,
       name: product.name,
@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
       dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
       badge: product.badge,
       description: product.description,
-      specs: product.specs || {},
+      specs: product.specs ? (typeof product.specs === 'string' ? JSON.parse(product.specs) : product.specs) : {},
       status: product.isAvailable ? 'In Stock' : 'Out of Stock',
-      listingDate: product.createdAt.toISOString().split('T')[0],
+      listingDate: product.createdAt.split('T')[0],
       sku: `KW-${product.category.substring(0, 2).toUpperCase()}-${product.id.substring(0, 3)}`
     };
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { sellRequestDAL } from '@/lib/dal';
 import { getCurrentUser } from '@/lib/auth';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -76,20 +76,18 @@ export async function POST(request: NextRequest) {
     const imageUrls = uploaded;
 
     // Create sell request in database
-    const sellRequest = await prisma.sellRequest.create({
-      data: {
-        userId: currentUser.userId,
-        fullName,
-        email,
-        category,
-        title,
-        description,
-        price,
-        contactMethod,
-        contactDetail,
-        imageUrls: imageUrls, // Store as JSON array
-        status: 'Pending'
-      }
+    const sellRequest = sellRequestDAL.create({
+      userId: currentUser.userId,
+      fullName,
+      email,
+      category,
+      title,
+      description,
+      price: price.toString(),
+      contactMethod,
+      contactDetail,
+      imageUrls: JSON.stringify(imageUrls), // Store as JSON string
+      status: 'Pending',
     });
 
     return NextResponse.json({

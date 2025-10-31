@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { orderDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -21,22 +21,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
-    const orders = await prisma.order.findMany({
+    const orders = orderDAL.findMany({
       where,
-      select: {
-        id: true,
-        userId: true,
-        items: true,
-        totalPrice: true,
-        fulfillmentStatus: true,
-        createdAt: true,
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true
-          }
-        }
+      include: {
+        user: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -66,7 +54,7 @@ export async function GET(request: NextRequest) {
         amount: Number(order.totalPrice),
         orderStatus: order.fulfillmentStatus,
         pickupStatus: getPickupStatus(order.fulfillmentStatus),
-        orderDate: order.createdAt.toISOString(),
+        orderDate: order.createdAt,
         items: items,
       }
     })
@@ -136,23 +124,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create order
-    const order = await prisma.order.create({
-      data: {
-        userId: currentUser.userId,
-        items: items,
-        totalPrice,
-        paymentStatus: 'pending',
-        fulfillmentStatus
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true
-          }
-        }
-      }
+    const order = orderDAL.create({
+      userId: currentUser.userId,
+      items: JSON.stringify(items),
+      totalPrice: totalPrice.toString(),
+      paymentStatus: 'pending',
+      fulfillmentStatus
     })
 
     return NextResponse.json({

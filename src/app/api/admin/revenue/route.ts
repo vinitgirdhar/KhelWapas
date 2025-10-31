@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { userDAL, orderDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -21,24 +21,24 @@ export async function GET(request: NextRequest) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
       
-      const revenue = await prisma.order.aggregate({
-        _sum: { totalPrice: true },
-        where: {
-          paymentStatus: 'paid',
-          createdAt: { gte: monthStart, lte: monthEnd },
-        },
-      })
+      const monthOrders = orderDAL.findMany({
+        where: { paymentStatus: 'paid' }
+      }).filter(o => {
+        const date = new Date(o.createdAt);
+        return date >= monthStart && date <= monthEnd;
+      });
+      
+      const revenue = monthOrders.reduce((sum, o) => sum + Number(o.totalPrice), 0);
       
       monthsData.push({
         month: monthStart.toLocaleString('en-US', { month: 'short' }),
-        revenue: Number(revenue._sum.totalPrice || 0),
+        revenue: revenue,
       })
     }
 
     // Get sales by product type (from orders' items) - limit to recent orders for performance
-    const allOrders = await prisma.order.findMany({
+    const allOrders = orderDAL.findMany({
       where: { paymentStatus: 'paid' },
-      select: { items: true },
       take: 1000, // Limit to last 1000 paid orders for performance
       orderBy: { createdAt: 'desc' }
     })
@@ -73,22 +73,11 @@ export async function GET(request: NextRequest) {
     ]
 
     // Get recent sales (last 5 orders)
-    const recentOrders = await prisma.order.findMany({
+    const recentOrders = orderDAL.findMany({
       where: { paymentStatus: 'paid' },
       take: 5,
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        items: true,
-        totalPrice: true,
-        paymentStatus: true,
-        createdAt: true,
-        user: {
-          select: {
-            fullName: true,
-          },
-        },
-      },
+      include: { user: true }
     })
 
     const recentSales = recentOrders.map(order => {
@@ -100,29 +89,20 @@ export async function GET(request: NextRequest) {
         customer: order.user.fullName,
         type: firstItem.productName?.toLowerCase().includes('pre-owned') ? 'Pre-Owned' : 'New Gear',
         status: order.paymentStatus === 'paid' ? 'Paid' : 'Pending',
-        date: order.createdAt.toISOString().split('T')[0],
+        date: order.createdAt.split('T')[0],
         amount: Number(order.totalPrice),
       }
     })
 
     // Calculate summary stats
-    const totalRevenue = await prisma.order.aggregate({
-      _sum: { totalPrice: true },
-      where: { paymentStatus: 'paid' },
-    })
+    const paidOrders = orderDAL.findMany({ where: { paymentStatus: 'paid' } });
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.totalPrice), 0);
 
-    const totalSales = await prisma.order.count({
-      where: { paymentStatus: 'paid' },
-    })
+    const totalSales = orderDAL.count({ paymentStatus: 'paid' });
 
-    const newCustomers = await prisma.user.count({
-      where: {
-        role: 'user',
-        createdAt: {
-          gte: new Date(now.getFullYear(), now.getMonth(), 1),
-        },
-      },
-    })
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const newCustomers = userDAL.findMany({ where: { role: 'user' } })
+      .filter(u => new Date(u.createdAt) >= monthStart).length
 
     const itemsSold = allOrders.reduce((sum, order) => {
       const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
@@ -136,7 +116,7 @@ export async function GET(request: NextRequest) {
         salesTypeData,
         recentSales,
         summary: {
-          totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
+          totalRevenue: totalRevenue,
           totalSales,
           newCustomers,
           itemsSold,

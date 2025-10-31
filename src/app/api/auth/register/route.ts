@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { userDAL } from '@/lib/dal'
 import { hashPassword, generateToken, setAuthCookie } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
@@ -33,9 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+    const existingUser = userDAL.findUnique({ email })
 
     if (existingUser) {
       return NextResponse.json(
@@ -48,13 +46,15 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password)
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        fullName,
-        email,
-        passwordHash,
-        role: 'user'
-      }
+    const user = userDAL.create({
+      fullName,
+      email,
+      passwordHash,
+      role: 'user',
+      phone: null,
+      profilePicture: null,
+      status: 'Active',
+      rating: 5
     })
 
     // Generate JWT token

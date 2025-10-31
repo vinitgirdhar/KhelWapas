@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { orderDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function PATCH(
@@ -38,17 +38,10 @@ export async function PATCH(
     // Extract the UUID prefix from the short orderId format
     const idPrefix = orderId.replace('ORD-', '').toLowerCase()
     
-    // Find order by the UUID prefix
-    const orders = await prisma.order.findMany({
-      where: {
-        id: {
-          startsWith: idPrefix
-        }
-      },
-      take: 1
-    })
-    
-    const order = orders[0]
+    // Find order by the UUID prefix (DAL supports equality only, so filter in memory)
+    const order = orderDAL
+      .findMany()
+      .find(o => o.id.toLowerCase().startsWith(idPrefix))
 
     if (!order) {
       return NextResponse.json(
@@ -57,14 +50,13 @@ export async function PATCH(
       )
     }
 
-    // Update order status
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
+    // Update order status (updatedAt handled by DAL)
+    orderDAL.update(
+      { id: order.id },
+      {
         fulfillmentStatus: status,
-        updatedAt: new Date()
       }
-    })
+    );
 
     // In a real app, you would:
     // - Send email notification to customer

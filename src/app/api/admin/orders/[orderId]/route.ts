@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { orderDAL, addressDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(
@@ -21,36 +21,10 @@ export async function GET(
     // We need to search by the prefix since we only store the full UUID
     const idPrefix = orderId.replace('ORD-', '').toLowerCase()
     
-    // Find order by the UUID prefix - use select instead of include for better performance
-    const orders = await prisma.order.findMany({
-      where: {
-        id: {
-          startsWith: idPrefix
-        }
-      },
-      select: {
-        id: true,
-        userId: true,
-        items: true,
-        totalPrice: true,
-        fulfillmentStatus: true,
-        paymentStatus: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-            profilePicture: true
-          }
-        }
-      },
-      take: 1
-    })
-
-    const order = orders[0]
+    // Find order by the UUID prefix
+    const order = orderDAL
+      .findMany({ include: { user: true } })
+      .find(o => o.id.toLowerCase().startsWith(idPrefix))
 
     if (!order) {
       return NextResponse.json(
@@ -60,15 +34,12 @@ export async function GET(
     }
 
     // Get total orders for this customer
-    const customerOrders = await prisma.order.count({
-      where: { userId: order.userId }
-    })
+    const customerOrders = orderDAL.count({ userId: order.userId })
 
     // Get user's addresses - only fetch the default one
-    const addresses = await prisma.address.findMany({
+    const addresses = addressDAL.findMany({
       where: { userId: order.userId },
       orderBy: { isDefault: 'desc' },
-      take: 1
     })
 
     const shippingAddress = addresses[0] // Use first/default address
@@ -81,7 +52,7 @@ export async function GET(
     const timeline = [
       {
         status: 'Order Placed',
-        timestamp: order.createdAt.toISOString(),
+        timestamp: new Date(order.createdAt).toISOString(),
         description: 'Order was successfully placed'
       }
     ]
@@ -89,7 +60,7 @@ export async function GET(
     if (order.fulfillmentStatus === 'Confirmed' || order.fulfillmentStatus === 'Shipped' || order.fulfillmentStatus === 'Delivered') {
       timeline.push({
         status: 'Order Confirmed',
-        timestamp: order.updatedAt.toISOString(),
+        timestamp: new Date(order.updatedAt).toISOString(),
         description: 'Order has been confirmed and is being processed'
       })
     }
@@ -97,7 +68,7 @@ export async function GET(
     if (order.fulfillmentStatus === 'Shipped' || order.fulfillmentStatus === 'Delivered') {
       timeline.push({
         status: 'Shipped',
-        timestamp: order.updatedAt.toISOString(),
+        timestamp: new Date(order.updatedAt).toISOString(),
         description: 'Order has been shipped'
       })
     }
@@ -105,7 +76,7 @@ export async function GET(
     if (order.fulfillmentStatus === 'Delivered') {
       timeline.push({
         status: 'Delivered',
-        timestamp: order.updatedAt.toISOString(),
+        timestamp: new Date(order.updatedAt).toISOString(),
         description: 'Order has been delivered successfully'
       })
     }
@@ -113,7 +84,7 @@ export async function GET(
     if (order.fulfillmentStatus === 'Cancelled') {
       timeline.push({
         status: 'Cancelled',
-        timestamp: order.updatedAt.toISOString(),
+        timestamp: new Date(order.updatedAt).toISOString(),
         description: 'Order has been cancelled'
       })
     }
@@ -135,7 +106,7 @@ export async function GET(
       orderStatus: order.fulfillmentStatus,
       paymentStatus: order.paymentStatus,
       paymentMethod: 'Credit Card', // This should come from payment data
-      orderDate: order.createdAt.toISOString(),
+  orderDate: new Date(order.createdAt).toISOString(),
       shippingAddress: shippingAddress ? {
         fullName: shippingAddress.fullName,
         phone: shippingAddress.phone,
@@ -164,7 +135,7 @@ export async function GET(
         ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() 
         : undefined,
       actualDelivery: order.fulfillmentStatus === 'Delivered' 
-        ? order.updatedAt.toISOString() 
+        ? new Date(order.updatedAt).toISOString() 
         : undefined,
       notes: undefined, // Customer notes would come from order data
       adminNotes: undefined, // Admin notes would come from order data

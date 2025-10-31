@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { orderDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function POST(
@@ -20,25 +20,10 @@ export async function POST(
     // Extract the UUID prefix from the short orderId format
     const idPrefix = orderId.replace('ORD-', '').toLowerCase()
     
-    // Find order by the UUID prefix
-    const orders = await prisma.order.findMany({
-      where: {
-        id: {
-          startsWith: idPrefix
-        }
-      },
-      select: {
-        id: true,
-        user: {
-          select: {
-            email: true
-          }
-        }
-      },
-      take: 1
-    })
-    
-    const order = orders[0]
+    // Find order by the UUID prefix (include user for email)
+    const order = orderDAL
+      .findMany({ include: { user: true } })
+      .find(o => o.id.toLowerCase().startsWith(idPrefix))
 
     if (!order) {
       return NextResponse.json(
@@ -53,11 +38,11 @@ export async function POST(
     // - Log the action
     
     // For now, just simulate success
-    console.log(`Invoice sent to ${order.user.email} for order ${orderId}`)
+  console.log(`Invoice sent to ${order.user.email} for order ${orderId}`)
 
     return NextResponse.json({
       success: true,
-      message: `Invoice sent to ${order.user.email}`
+  message: `Invoice sent to ${order.user.email}`
     })
   } catch (error) {
     console.error('Send invoice error:', error)

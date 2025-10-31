@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { paymentMethodDAL } from '@/lib/dal';
 
 // GET /api/profile/payment-methods - Get user payment methods
 export async function GET(request: NextRequest) {
@@ -10,13 +10,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const paymentMethods = await prisma.paymentMethod.findMany({
+    const paymentMethods = paymentMethodDAL.findMany({
       where: { userId },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      take: 20 // Limit to 20 payment methods
+      orderBy: { createdAt: 'desc' }
     });
 
     return NextResponse.json(paymentMethods);
@@ -38,14 +34,13 @@ export async function POST(request: NextRequest) {
 
     // If this is set as default, unset all other default payment methods for this user
     if (isDefault) {
-      await prisma.paymentMethod.updateMany({
-        where: { userId },
-        data: { isDefault: false },
-      });
+      paymentMethodDAL.updateMany(
+        { userId, isDefault: 1 },
+        { isDefault: 0 }
+      );
     }
 
-    const newPaymentMethod = await prisma.paymentMethod.create({
-      data: {
+    const newPaymentMethod = paymentMethodDAL.create({
         userId,
         type,
         cardLast4,
@@ -55,9 +50,9 @@ export async function POST(request: NextRequest) {
         expiryYear,
         upiId,
         nickname,
-        isDefault,
-      },
-    });
+        isDefault: isDefault ? 1 : 0,
+      }
+    );
 
     return NextResponse.json(newPaymentMethod, { status: 201 });
   } catch (error) {

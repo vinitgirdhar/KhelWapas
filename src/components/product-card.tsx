@@ -47,7 +47,7 @@ const getBadgeClass = (badge?: Product['badge']) => {
 export default function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.image || (product.images && product.images[0]) || '/images/products/background.jpg';
   return (
-    <Card className="overflow-hidden group transition-all duration-200 hover:shadow-xl hover:-translate-y-1">
+    <Card className="overflow-hidden group transition-all duration-150 hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]">
       <Link 
         href={`/products/${product.id}`} 
         className="flex flex-col h-full"
@@ -60,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               alt={product.name}
               width={600}
               height={600}
-              className="aspect-square object-cover w-full transition-transform duration-300 group-hover:scale-105"
+              className="aspect-square object-cover w-full transition-transform duration-200 group-hover:scale-105"
               data-ai-hint={product.dataAiHint}
               loading="lazy"
               quality={85}
@@ -73,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               }}
             />
             {product.badge && (
-                <Badge className={`absolute top-3 right-3 transition-all duration-200 ${getBadgeClass(product.badge)}`}>
+                <Badge className={`absolute top-3 right-3 transition-all duration-150 ${getBadgeClass(product.badge)}`}>
                   {product.badge}
                 </Badge>
             )}
@@ -99,7 +99,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   'border border-input bg-background group-hover:bg-primary group-hover:text-primary-foreground' // Corresponds to variant="outline" with hover effects
               )}>
                 View Details
-                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform duration-150" />
               </div>
             </div>
           </div>

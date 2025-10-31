@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { userDAL } from '@/lib/dal';
 import bcrypt from 'bcryptjs';
 
 // POST /api/profile/change-password - Change user password
@@ -15,10 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch user with current password hash
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, passwordHash: true },
-    });
+    const user = userDAL.findUnique({ id: userId });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -35,10 +32,7 @@ export async function POST(request: NextRequest) {
     const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: newPasswordHash },
-    });
+    userDAL.update({ id: userId }, { passwordHash: newPasswordHash });
 
     return NextResponse.json({ message: 'Password updated successfully' });
   } catch (error) {

@@ -27,12 +27,12 @@ import { Button } from '@/components/ui/button';
 import { MoreHorizontal, FileText, Truck } from 'lucide-react';
 import { Order } from '@/types/user';
 
-const statusConfig: Record<Order['status'], { color: string, text: string }> = {
-    delivered: { color: "bg-green-500", text: "text-green-800 bg-green-100" },
-    processing: { color: "bg-yellow-500", text: "text-yellow-800 bg-yellow-100" },
-    cancelled: { color: "bg-red-500", text: "text-red-800 bg-red-100" },
-    pending: { color: "bg-blue-500", text: "text-blue-800 bg-blue-100" },
-    shipped: { color: "bg-purple-500", text: "text-purple-800 bg-purple-100" },
+const statusConfig: Record<string, { color: string, text: string }> = {
+    'Delivered': { color: "bg-green-500", text: "text-green-800 bg-green-100" },
+    'Confirmed': { color: "bg-yellow-500", text: "text-yellow-800 bg-yellow-100" },
+    'Cancelled': { color: "bg-red-500", text: "text-red-800 bg-red-100" },
+    'Pending': { color: "bg-blue-500", text: "text-blue-800 bg-blue-100" },
+    'Shipped': { color: "bg-purple-500", text: "text-purple-800 bg-purple-100" },
 };
 
 export default function OrdersPage() {
@@ -97,17 +97,20 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
+            {orders.map((order) => {
+              const status = order.orderStatus;
+              const config = statusConfig[status] || statusConfig['Pending'];
+              return (
               <TableRow key={order.id}>
-                <TableCell className="font-medium">#{order.id}</TableCell>
-                <TableCell>{order.date}</TableCell>
+                <TableCell className="font-medium">#{order.orderId || order.id}</TableCell>
+                <TableCell>{order.orderDate || order.date}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={`border-0 font-semibold ${statusConfig[order.status].text}`}>
-                    <span className={`h-2 w-2 mr-2 rounded-full ${statusConfig[order.status].color}`} />
-                    {order.status}
+                  <Badge variant="outline" className={`border-0 font-semibold ${config.text}`}>
+                    <span className={`h-2 w-2 mr-2 rounded-full ${config.color}`} />
+                    {status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">₹{order.total.toLocaleString('en-IN')}</TableCell>
+                <TableCell className="text-right">₹{(order.amount || order.total || 0).toLocaleString('en-IN')}</TableCell>
                 <TableCell className="text-center">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -127,7 +130,8 @@ export default function OrdersPage() {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )}
+            )}
           </TableBody>
         </Table>
       </CardContent>

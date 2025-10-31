@@ -46,7 +46,7 @@ export const OptimizedLink = forwardRef<HTMLAnchorElement, OptimizedLinkProps>(
         if (showFeedback) {
           setIsNavigating(true);
           // Reset after navigation or timeout
-          setTimeout(() => setIsNavigating(false), 500);
+          setTimeout(() => setIsNavigating(false), 300);
         }
       }
     }, [onClick, showFeedback]);
@@ -60,8 +60,8 @@ export const OptimizedLink = forwardRef<HTMLAnchorElement, OptimizedLinkProps>(
         scroll={scroll}
         replace={replace}
         className={cn(
-          'transition-all duration-150',
-          showFeedback && isNavigating && 'opacity-70 scale-[0.98]',
+          'transition-all duration-100 active:scale-[0.98] active:opacity-90',
+          showFeedback && isNavigating && 'opacity-80 scale-[0.99]',
           className
         )}
         onClick={handleClick}

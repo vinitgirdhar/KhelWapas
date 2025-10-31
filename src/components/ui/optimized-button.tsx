@@ -13,7 +13,7 @@ interface OptimizedButtonProps extends ButtonProps {
   
   /**
    * Prevent double clicks within this duration (ms)
-   * @default 500
+   * @default 300
    */
   debounceDelay?: number;
 }
@@ -25,7 +25,7 @@ interface OptimizedButtonProps extends ButtonProps {
 export const OptimizedButton = React.forwardRef<HTMLButtonElement, OptimizedButtonProps>(
   ({ 
     showFeedback = true, 
-    debounceDelay = 500,
+    debounceDelay = 300,
     onClick, 
     className,
     disabled,
@@ -57,7 +57,7 @@ export const OptimizedButton = React.forwardRef<HTMLButtonElement, OptimizedButt
         setShowClickFeedback(true);
         feedbackTimeoutRef.current = setTimeout(() => {
           setShowClickFeedback(false);
-        }, 150);
+        }, 100);
       }
 
       // Set processing state
@@ -76,8 +76,8 @@ export const OptimizedButton = React.forwardRef<HTMLButtonElement, OptimizedButt
       <Button
         ref={ref}
         className={cn(
-          'transition-all duration-150',
-          showClickFeedback && 'scale-[0.96]',
+          'transition-all duration-100',
+          showClickFeedback && 'scale-[0.97]',
           className
         )}
         onClick={handleClick}

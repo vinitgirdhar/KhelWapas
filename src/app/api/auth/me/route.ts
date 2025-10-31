@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { userDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -14,17 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get full user details from database
-    const user = await prisma.user.findUnique({
-      where: { id: currentUser.userId },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
+    const user = userDAL.findUnique({ id: currentUser.userId })
 
     if (!user) {
       return NextResponse.json(

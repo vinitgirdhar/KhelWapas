@@ -82,4 +82,11 @@ const sentryWebpackPluginOptions = {
   // https://github.com/getsentry/sentry-webpack-plugin#options.
 };
 
-export default withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+const isSentryEnabled = Boolean(
+  process.env.SENTRY_DSN && process.env.SENTRY_DSN.trim().length > 0 ||
+  process.env.NEXT_PUBLIC_SENTRY_DSN && process.env.NEXT_PUBLIC_SENTRY_DSN.trim().length > 0
+);
+
+export default isSentryEnabled
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
+  : nextConfig;

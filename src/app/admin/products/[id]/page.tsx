@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { OptimizedLink } from '@/components/ui/optimized-link';
 import {
   Card,
   CardContent,

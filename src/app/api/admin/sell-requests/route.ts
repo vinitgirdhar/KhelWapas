@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { sellRequestDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -20,30 +20,8 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Get all sell requests with user information
-    const sellRequests = await prisma.sellRequest.findMany({
-      select: {
-        id: true,
-        userId: true,
-        fullName: true,
-        email: true,
-        category: true,
-        title: true,
-        description: true,
-        price: true,
-        contactMethod: true,
-        contactDetail: true,
-        imageUrls: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true
-          }
-        }
-      },
+    const sellRequests = sellRequestDAL.findMany({
+      include: { user: true },
       orderBy: {
         createdAt: 'desc'
       },
@@ -58,8 +36,8 @@ export async function GET(request: NextRequest) {
         ? JSON.parse(request.imageUrls) 
         : request.imageUrls,
       price: Number(request.price),
-      createdAt: request.createdAt.toISOString(),
-      updatedAt: request.updatedAt.toISOString()
+      createdAt: new Date(request.createdAt).toISOString(),
+      updatedAt: new Date(request.updatedAt).toISOString()
     }))
 
     return NextResponse.json({

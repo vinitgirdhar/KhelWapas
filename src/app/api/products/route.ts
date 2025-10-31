@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { productDAL } from '@/lib/dal'
 import { normalizeMany } from '@/lib/image'
 import { cache, generateCacheKey } from '@/lib/cache'
 import { PerformanceTimer } from '@/lib/performance-timer'
@@ -69,23 +69,8 @@ export async function GET(request: NextRequest) {
 
     // OPTIMIZATION: Use select to fetch only required fields
     // This reduces data transfer and serialization overhead
-    const products = await prisma.product.findMany({
+    const products = productDAL.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        category: true,
-        type: true,
-        price: true,
-        originalPrice: true,
-        grade: true,
-        imageUrls: true,
-        badge: true,
-        description: true,
-        specs: true,
-        isAvailable: true,
-        createdAt: true
-      },
       orderBy: {
         createdAt: 'desc'
       },
@@ -101,9 +86,14 @@ export async function GET(request: NextRequest) {
 
     // OPTIMIZATION: Batch transform without expensive I/O operations
     const transformedProducts = products.map(product => {
+      // Parse JSON imageUrls
+      const imageUrlsArray = typeof product.imageUrls === 'string' 
+        ? JSON.parse(product.imageUrls) 
+        : product.imageUrls;
+      
       // Normalize images without file existence checks
-      let images = Array.isArray(product.imageUrls) 
-        ? normalizeMany(product.imageUrls as any) 
+      let images = Array.isArray(imageUrlsArray) 
+        ? normalizeMany(imageUrlsArray as any) 
         : []
       
       // REMOVED: File existence check - major performance bottleneck
@@ -125,9 +115,9 @@ export async function GET(request: NextRequest) {
         dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
         badge: product.badge,
         description: product.description,
-        specs: product.specs || {},
+        specs: product.specs ? (typeof product.specs === 'string' ? JSON.parse(product.specs) : product.specs) : {},
         status: product.isAvailable ? 'In Stock' : 'Out of Stock',
-        listingDate: product.createdAt.toISOString().split('T')[0],
+        listingDate: product.createdAt.split('T')[0],
         sku: `KW-${product.category.substring(0, 2).toUpperCase()}-${product.id.substring(0, 3)}`
       }
     })

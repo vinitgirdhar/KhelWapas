@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { sellRequestDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Auth required' }, { status: 401 })
     }
 
-    const sellRequests = await prisma.sellRequest.findMany({
+    const sellRequests = sellRequestDAL.findMany({
       where: { userId: currentUser.userId },
       orderBy: { createdAt: 'desc' },
       take: 100 // Limit to most recent 100 requests

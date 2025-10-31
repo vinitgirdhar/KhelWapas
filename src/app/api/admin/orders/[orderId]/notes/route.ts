@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { orderDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function POST(
@@ -22,17 +22,10 @@ export async function POST(
     // Extract the UUID prefix from the short orderId format
     const idPrefix = orderId.replace('ORD-', '').toLowerCase()
     
-    // Find order by the UUID prefix
-    const orders = await prisma.order.findMany({
-      where: {
-        id: {
-          startsWith: idPrefix
-        }
-      },
-      take: 1
-    })
-    
-    const order = orders[0]
+    // Find order by the UUID prefix (DAL supports equality only, so filter in memory)
+    const order = orderDAL
+      .findMany()
+      .find(o => o.id.toLowerCase().startsWith(idPrefix))
 
     if (!order) {
       return NextResponse.json(

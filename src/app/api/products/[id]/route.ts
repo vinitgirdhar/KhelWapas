@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { productDAL } from '@/lib/dal'
 import { z } from 'zod'
 import { normalizeMany } from '@/lib/image'
 import { cache } from '@/lib/cache'
@@ -12,24 +12,7 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: params.id },
-      select: {
-        id: true,
-        name: true,
-        category: true,
-        type: true,
-        price: true,
-        originalPrice: true,
-        grade: true,
-        imageUrls: true,
-        badge: true,
-        description: true,
-        specs: true,
-        isAvailable: true,
-        createdAt: true
-      }
-    })
+    const product = productDAL.findUnique({ id: params.id })
 
     if (!product) {
       return NextResponse.json(
@@ -39,7 +22,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Transform product - no file existence check for performance
-    const imgs = Array.isArray(product.imageUrls) ? normalizeMany(product.imageUrls as any) : []
+    const imageUrlsArray = typeof product.imageUrls === 'string' ? JSON.parse(product.imageUrls) : product.imageUrls;
+    const imgs = Array.isArray(imageUrlsArray) ? normalizeMany(imageUrlsArray as any) : []
     
     const transformedProduct = {
       id: product.id,
@@ -54,9 +38,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       dataAiHint: product.name.toLowerCase().split(' ').slice(0, 2).join(' '),
       badge: product.badge,
       description: product.description,
-      specs: product.specs || {},
+      specs: product.specs ? (typeof product.specs === 'string' ? JSON.parse(product.specs) : product.specs) : {},
       status: product.isAvailable ? 'In Stock' : 'Out of Stock',
-      listingDate: product.createdAt.toISOString().split('T')[0],
+      listingDate: product.createdAt.split('T')[0],
       sku: `KW-${product.category.substring(0, 2).toUpperCase()}-${product.id.substring(0, 3)}`
     }
 
@@ -125,26 +109,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const data = parsed.data
 
-    // Build prisma update data without undefined fields
+    // Build update data without undefined fields
     const updateData: any = {}
     if (data.name !== undefined) updateData.name = data.name
     if (data.category !== undefined) updateData.category = data.category
     if (data.type !== undefined) updateData.type = data.type
-    if (data.price !== undefined) updateData.price = data.price
-    if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice
+    if (data.price !== undefined) updateData.price = data.price.toString()
+    if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice?.toString() || null
     if (data.description !== undefined) updateData.description = data.description
-    if (data.isAvailable !== undefined) updateData.isAvailable = data.isAvailable
-    if (data.imageUrls !== undefined) updateData.imageUrls = data.imageUrls
+    if (data.isAvailable !== undefined) updateData.isAvailable = data.isAvailable ? 1 : 0
+    if (data.imageUrls !== undefined) updateData.imageUrls = JSON.stringify(data.imageUrls)
     if (data.badge !== undefined) updateData.badge = data.badge
     if (data.grade !== undefined) updateData.grade = data.grade
-    if (data.specs !== undefined) updateData.specs = data.specs
+    if (data.specs !== undefined) updateData.specs = JSON.stringify(data.specs)
 
     console.log('[API] Update product request', { id: params.id, updateData })
 
-    const updated = await prisma.product.update({
-      where: { id: params.id },
-      data: updateData,
-    })
+    const updated = productDAL.update({ id: params.id }, updateData)
 
     console.log('[API] Product updated', { id: updated.id })
 
@@ -153,7 +134,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     console.log('[API] Product cache invalidated')
 
     // Transform to match frontend shape - no file existence check
-    const imgs2 = Array.isArray(updated.imageUrls) ? normalizeMany(updated.imageUrls as any) : []
+    const imageUrlsArray2 = typeof updated.imageUrls === 'string' ? JSON.parse(updated.imageUrls) : updated.imageUrls;
+    const imgs2 = Array.isArray(imageUrlsArray2) ? normalizeMany(imageUrlsArray2 as any) : []
     
     const transformedProduct = {
       id: updated.id,
@@ -168,9 +150,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       dataAiHint: updated.name.toLowerCase().split(' ').slice(0, 2).join(' '),
       badge: updated.badge,
       description: updated.description,
-      specs: (updated as any).specs || {},
+      specs: updated.specs ? (typeof updated.specs === 'string' ? JSON.parse(updated.specs) : updated.specs) : {},
       status: updated.isAvailable ? 'In Stock' : 'Out of Stock',
-      listingDate: updated.createdAt.toISOString().split('T')[0],
+      listingDate: updated.createdAt.split('T')[0],
       sku: `KW-${updated.category.substring(0, 2).toUpperCase()}-${updated.id.substring(0, 3)}`
     }
 

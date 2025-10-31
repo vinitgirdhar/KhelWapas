@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { userDAL } from '@/lib/dal';
 import bcrypt from 'bcryptjs';
 
 // GET /api/profile - Get user profile
@@ -12,19 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        profilePicture: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = userDAL.findUnique({ id: userId });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -47,35 +35,18 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate email uniqueness if changed
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        email,
-        NOT: { id: userId },
-      },
-    });
+    const existingUser = userDAL.findUnique({ email });
 
-    if (existingUser) {
+    if (existingUser && existingUser.id !== userId) {
       return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
+    const updatedUser = userDAL.update({ id: userId }, {
         fullName,
         email,
         phone,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        profilePicture: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+      }
+    );
 
     return NextResponse.json(updatedUser);
   } catch (error) {

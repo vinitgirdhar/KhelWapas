@@ -40,7 +40,7 @@ export async function getCurrentUser(request?: NextRequest): Promise<JWTPayload 
       token = request.cookies.get('auth-token')?.value
     } else {
       // For server components
-      const cookieStore = cookies()
+      const cookieStore = await (cookies() as any)
       token = cookieStore.get('auth-token')?.value
     }
 

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { MoreHorizontal, PlusCircle, Search, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { OptimizedLink } from '@/components/ui/optimized-link';
 import {
   Card,
   CardContent,
@@ -170,12 +171,12 @@ export default function AdminProductsPage() {
               </span>
             </Button>
             <Button size="sm" variant="outline" className="h-7 gap-1" asChild>
-              <Link href="/admin/products/new">
+              <OptimizedLink href="/admin/products/new" prefetch={true}>
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   Add Product
                 </span>
-              </Link>
+              </OptimizedLink>
             </Button>
           </div>
         </div>
@@ -317,7 +318,7 @@ function ProductTable({ products, onDelete, loading }: { products: Product[], on
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem asChild>
-                            <Link href={`/admin/products/${product.id}`}>Edit</Link>
+                            <OptimizedLink href={`/admin/products/${product.id}`} prefetch={true} className="w-full">Edit</OptimizedLink>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAction('Paus', product.name)}>Pause Listing</DropdownMenuItem>
                           <DropdownMenuItem 

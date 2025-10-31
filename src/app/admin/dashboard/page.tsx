@@ -4,6 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { OptimizedLink } from '@/components/ui/optimized-link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Package, ShoppingCart, Users, CheckCircle, Clock, XCircle, MoreHorizontal } from "lucide-react";
@@ -149,7 +150,7 @@ export default function AdminDashboardPage() {
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          <Link href="/admin/revenue">
+          <OptimizedLink href="/admin/revenue" prefetch={true} className="block transition-transform duration-100 hover:scale-[1.02] active:scale-[0.98]">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -164,8 +165,8 @@ export default function AdminDashboardPage() {
                 </p>
               </CardContent>
             </Card>
-          </Link>
-           <Link href="/admin/users">
+          </OptimizedLink>
+           <OptimizedLink href="/admin/users" prefetch={true} className="block transition-transform duration-100 hover:scale-[1.02] active:scale-[0.98]">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -180,8 +181,8 @@ export default function AdminDashboardPage() {
                 </p>
               </CardContent>
             </Card>
-          </Link>
-          <Link href="/admin/orders">
+          </OptimizedLink>
+          <OptimizedLink href="/admin/orders" prefetch={true} className="block transition-transform duration-100 hover:scale-[1.02] active:scale-[0.98]">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Orders</CardTitle>
@@ -194,8 +195,8 @@ export default function AdminDashboardPage() {
                 </p>
               </CardContent>
             </Card>
-          </Link>
-          <Link href="/admin/products">
+          </OptimizedLink>
+          <OptimizedLink href="/admin/products" prefetch={true} className="block transition-transform duration-100 hover:scale-[1.02] active:scale-[0.98]">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -210,7 +211,7 @@ export default function AdminDashboardPage() {
                 </p>
               </CardContent>
             </Card>
-          </Link>
+          </OptimizedLink>
         </div>
         <Card>
             <CardHeader>
@@ -276,7 +277,7 @@ export default function AdminDashboardPage() {
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                     <DropdownMenuItem asChild>
-                                      <Link href={`/admin/requests/${request.id}`}>View Details</Link>
+                                      <OptimizedLink href={`/admin/requests/${request.id}`} prefetch={true} className="w-full">View Details</OptimizedLink>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => handleStatusChange(request.id, 'Approved')}>Approve</DropdownMenuItem>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { userDAL, productDAL, orderDAL } from '@/lib/dal'
 import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -19,64 +19,50 @@ export async function GET(request: NextRequest) {
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
 
-    // Fetch all necessary data in parallel
-    const [
-      totalRevenue,
-      lastMonthRevenue,
-      totalOrders,
-      lastMonthOrders,
-      totalUsers,
-      lastMonthUsers,
-      totalProducts,
-    ] = await Promise.all([
-      // Current month revenue
-      prisma.order.aggregate({
-        _sum: { totalPrice: true },
-        where: {
-          paymentStatus: 'paid',
-          createdAt: { gte: currentMonthStart },
-        },
-      }),
-      // Last month revenue
-      prisma.order.aggregate({
-        _sum: { totalPrice: true },
-        where: {
-          paymentStatus: 'paid',
-          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
-        },
-      }),
-      // Current month orders
-      prisma.order.count({
-        where: { createdAt: { gte: currentMonthStart } },
-      }),
-      // Last month orders
-      prisma.order.count({
-        where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
-      }),
-      // Current month users
-      prisma.user.count({
-        where: { 
-          role: 'user',
-          createdAt: { gte: currentMonthStart }
-        },
-      }),
-      // Last month users
-      prisma.user.count({
-        where: { 
-          role: 'user',
-          createdAt: { gte: lastMonthStart, lte: lastMonthEnd }
-        },
-      }),
-      // Total products
-      prisma.product.count({
-        where: { isAvailable: true },
-      }),
-    ])
+    // Fetch all necessary data
+    // Current month revenue
+    const currentMonthOrders = orderDAL.findMany({
+      where: {
+        paymentStatus: 'paid'
+      }
+    }).filter(o => new Date(o.createdAt) >= currentMonthStart);
+    const totalRevenue = currentMonthOrders.reduce((sum, o) => sum + Number(o.totalPrice), 0);
+
+    // Last month revenue
+    const lastMonthOrdersData = orderDAL.findMany({
+      where: {
+        paymentStatus: 'paid'
+      }
+    }).filter(o => {
+      const date = new Date(o.createdAt);
+      return date >= lastMonthStart && date <= lastMonthEnd;
+    });
+    const lastMonthRevenue = lastMonthOrdersData.reduce((sum, o) => sum + Number(o.totalPrice), 0);
+
+    // Current month orders
+    const totalOrders = orderDAL.findMany().filter(o => new Date(o.createdAt) >= currentMonthStart).length;
+
+    // Last month orders
+    const lastMonthOrders = orderDAL.findMany().filter(o => {
+      const date = new Date(o.createdAt);
+      return date >= lastMonthStart && date <= lastMonthEnd;
+    }).length;
+
+    // Current month users
+    const totalUsers = userDAL.findMany({ where: { role: 'user' } }).filter(u => new Date(u.createdAt) >= currentMonthStart).length;
+
+    // Last month users
+    const lastMonthUsers = userDAL.findMany({ where: { role: 'user' } }).filter(u => {
+      const date = new Date(u.createdAt);
+      return date >= lastMonthStart && date <= lastMonthEnd;
+    }).length;
+
+    // Total products
+  const totalProducts = productDAL.count({ isAvailable: 1 })
 
     // Calculate percentages
-    const revenueChange = lastMonthRevenue._sum.totalPrice
-      ? ((Number(totalRevenue._sum.totalPrice || 0) - Number(lastMonthRevenue._sum.totalPrice)) / 
-         Number(lastMonthRevenue._sum.totalPrice)) * 100
+    const revenueChange = lastMonthRevenue
+      ? ((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
       : 0
 
     const ordersChange = lastMonthOrders
@@ -91,7 +77,7 @@ export async function GET(request: NextRequest) {
       success: true,
       stats: {
         revenue: {
-          total: Number(totalRevenue._sum.totalPrice || 0),
+          total: totalRevenue,
           change: Number(revenueChange.toFixed(1)),
         },
         orders: {

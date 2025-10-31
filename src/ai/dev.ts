@@ -1,5 +1,2 @@
-import { config } from 'dotenv';
-config();
-
-import '@/ai/flows/estimate-resale-price.ts';
-import '@/ai/flows/khelbot-chat.ts';
+// Genkit dev entry removed. No-op file retained for backward compatibility.
+export {};

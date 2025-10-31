@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { addressDAL } from '@/lib/dal';
 
 interface RouteParams {
   params: { id: string };
@@ -13,25 +13,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { userId, title, fullName, phone, street, city, state, postalCode, country, isDefault } = addressData;
 
     // Verify the address belongs to the user
-    const existingAddress = await prisma.address.findFirst({
-      where: { id, userId },
-    });
+    const existingAddress = addressDAL.findUnique({ id });
 
-    if (!existingAddress) {
+    if (!existingAddress || existingAddress.userId !== userId) {
       return NextResponse.json({ error: 'Address not found' }, { status: 404 });
     }
 
     // If this is set as default, unset all other default addresses for this user
     if (isDefault) {
-      await prisma.address.updateMany({
-        where: { userId, NOT: { id } },
-        data: { isDefault: false },
-      });
+      addressDAL.updateMany(
+        { userId, isDefault: 1 },
+        { isDefault: 0 }
+      );
     }
 
-    const updatedAddress = await prisma.address.update({
-      where: { id },
-      data: {
+    const updatedAddress = addressDAL.update({ id }, {
         title,
         fullName,
         phone,
@@ -40,9 +36,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         state,
         postalCode,
         country,
-        isDefault,
-      },
-    });
+        isDefault: isDefault ? 1 : 0,
+      }
+    );
 
     return NextResponse.json(updatedAddress);
   } catch (error) {
@@ -62,17 +58,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify the address belongs to the user
-    const existingAddress = await prisma.address.findFirst({
-      where: { id, userId },
-    });
+    const existingAddress = addressDAL.findUnique({ id });
 
-    if (!existingAddress) {
+    if (!existingAddress || existingAddress.userId !== userId) {
       return NextResponse.json({ error: 'Address not found' }, { status: 404 });
     }
 
-    await prisma.address.delete({
-      where: { id },
-    });
+    addressDAL.delete({ id });
 
     return NextResponse.json({ message: 'Address deleted successfully' });
   } catch (error) {

@@ -8,8 +8,8 @@
  * - KhelbotChatOutput - The return type for chatWithKhelbot.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { z } from 'zod';
 
 type KhelbotChatInput = {
   message: string;
@@ -68,7 +68,17 @@ export async function chatWithKhelbot(input: KhelbotChatInput): Promise<KhelbotC
   
   fullPrompt += `User: ${message}\nKhelBot:`;
 
-  const response = await ai.generate(fullPrompt);
+  // Initialize Google Gemini client (support multiple env var names for compatibility)
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing Gemini API key. Set GEMINI_API_KEY or GOOGLE_API_KEY or GOOGLE_GENAI_API_KEY.');
+  }
 
-  return response.text;
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const result = await model.generateContent(fullPrompt);
+  return result.response.text();
 }
