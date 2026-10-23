@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
   email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  password: z.string().min(8, 'Password must be at least 8 characters.').max(72),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -64,9 +64,10 @@ function RegisterPageInner() {
           description: `Welcome to Khelwapas, ${result.user.fullName}!`,
         });
 
-        // Redirect user to the login page, preserving redirect
+        window.dispatchEvent(new Event('storage'));
+        // Continue with the session created by registration
         const redirect = searchParams.get('redirect');
-        router.push(redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login');
+        router.push(redirect?.startsWith('/') && !redirect.startsWith('//') && !redirect.includes('\\') ? redirect : '/profile');
       } else {
         toast({
           variant: 'destructive',

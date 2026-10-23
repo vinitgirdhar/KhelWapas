@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +9,8 @@ import { cn } from '@/lib/utils';
 
 export type Product = {
   id: string;
+  stock?: number;
+  sellerId?: string;
   name: string;
   category: string;
   type: 'new' | 'preowned';
@@ -50,13 +53,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     <Card className="overflow-hidden group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
       <Link href={`/products/${product.id}`} className="flex flex-col h-full">
         <CardContent className="p-0 flex flex-col flex-grow">
-          <div className="relative">
+          <div className="relative overflow-hidden bg-slate-50">
             <Image
               src={primaryImage}
               alt={product.name}
               width={600}
               height={600}
-              className="aspect-square object-cover w-full"
+              sizes="(max-width: 419px) 100vw, (max-width: 1023px) 50vw, 25vw"
+              className="aspect-square object-cover w-full transition-transform duration-700 motion-safe:group-hover:scale-105"
               data-ai-hint={product.dataAiHint}
               onError={(e) => {
                 const target = e.currentTarget as HTMLImageElement;
@@ -73,7 +77,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           <div className="p-4 flex flex-col flex-grow bg-card">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex flex-wrap gap-2 justify-between items-center mb-2">
               <p className="text-sm text-muted-foreground">{product.category}</p>
               {product.type === 'preowned' && product.grade && (
                 <Badge variant="outline" className="flex items-center gap-1.5">
@@ -84,7 +88,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             
             <h3 className="font-headline font-semibold text-card-foreground flex-grow">{product.name}</h3>
 
-            <div className="flex justify-between items-center mt-4">
+            <div className="flex flex-wrap gap-3 justify-between items-center mt-4">
               <p className="text-2xl font-bold font-headline text-primary">₹{product.price.toLocaleString('en-IN')}</p>
               {/* This is a visual-only element to avoid nested interactive elements */}
               <div className={cn(

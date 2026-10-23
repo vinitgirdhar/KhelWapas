@@ -1,3 +1,8 @@
+import { z } from 'zod';
+import { checkoutSchema, createDemoOrder } from '@/lib/orders';
+import { requireUser } from '@/lib/auth';
+import { apiError, pagination } from '@/lib/api';
+import { rateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
@@ -17,9 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Pagination support
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const skip = (page - 1) * limit
+    const { page, limit, skip } = pagination(searchParams)
 
     const orders = await prisma.order.findMany({
       where,
@@ -28,6 +31,8 @@ export async function GET(request: NextRequest) {
         userId: true,
         items: true,
         totalPrice: true,
+        paymentStatus: true,
+        shippingAddress: true,
         fulfillmentStatus: true,
         createdAt: true,
         user: {
@@ -64,6 +69,10 @@ export async function GET(request: NextRequest) {
           image: firstItem.image || '/images/products/background.jpg',
         },
         amount: Number(order.totalPrice),
+        total: Number(order.totalPrice),
+        paymentStatus: order.paymentStatus,
+        shippingAddress: order.shippingAddress,
+        status: order.fulfillmentStatus,
         orderStatus: order.fulfillmentStatus,
         pickupStatus: getPickupStatus(order.fulfillmentStatus),
         orderDate: order.createdAt.toISOString(),
@@ -75,13 +84,7 @@ export async function GET(request: NextRequest) {
       success: true,
       orders: transformedOrders
     })
-  } catch (error) {
-    console.error('Get orders error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+  } catch (error) { return apiError(error); }
 }
 
 // Helper function to determine pickup status based on order status
@@ -104,67 +107,11 @@ function getPickupStatus(orderStatus: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const { items, paymentMethod, fulfillmentStatus = 'pending' } = body
-
-    // Validate items
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Order items are required' },
-        { status: 400 }
-      )
-    }
-
-    // Calculate total price
-    let totalPrice = 0
-    for (const item of items) {
-      if (!item.productId || !item.quantity || !item.price) {
-        return NextResponse.json(
-          { success: false, message: 'Each item must have productId, quantity, and price' },
-          { status: 400 }
-        )
-      }
-      totalPrice += item.price * item.quantity
-    }
-
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        userId: currentUser.userId,
-        items: items,
-        totalPrice,
-        paymentStatus: 'pending',
-        fulfillmentStatus
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true
-          }
-        }
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Order created successfully',
-      order
-    })
-  } catch (error) {
-    console.error('Create order error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    const user = await requireUser(request);
+    await rateLimit('checkout', user.userId, 30);
+    const key = z.string().uuid('A checkout idempotency key is required').parse(request.headers.get('Idempotency-Key'));
+    const input = checkoutSchema.parse(await request.json());
+    const order = await createDemoOrder(user.userId, input, key);
+    return NextResponse.json({ success: true, demo: true, order }, { status: 201 });
+  } catch (error) { return apiError(error); }
 }

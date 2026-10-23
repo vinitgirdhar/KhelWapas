@@ -11,12 +11,12 @@ export default function SeasonalBanner() {
           style={{ backgroundImage: "url('/images/products/background.jpg')" }}
           data-ai-hint="stadium lights rain"
         >
-          <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tight">Monsoon Sports Gear Sale</h2>
+          <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tight">The next chapter starts with you.</h2>
           <p className="mt-4 text-lg max-w-2xl mx-auto text-primary-foreground/80">
-            Don't let the rain stop you. Get up to 40% off on all-weather gear, pre-owned and new!
+            From your first practice to your next personal best. Find the equipment that gets you moving.
           </p>
           <Button asChild size="lg" variant="secondary" className="mt-6 font-bold bg-accent hover:bg-accent/90 text-accent-foreground">
-            <Link href="/shop/new">Shop The Sale <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            <Link href="/shop/new">Explore new gear <ArrowRight className="ml-2 h-5 w-5" /></Link>
           </Button>
         </div>
       </div>

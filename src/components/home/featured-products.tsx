@@ -21,7 +21,8 @@ const categories = [
 
 export default function FeaturedProducts() {
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -38,13 +39,14 @@ export default function FeaturedProducts() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/products?available=true');
+        const response = await fetch('/api/products?available=true&limit=100');
         const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not load gear');
         if (data.success) {
           setAllProducts(data.products);
         }
       } catch (error) {
-        console.error('Failed to fetch products:', error);
+        setError('Could not load featured gear. Please refresh to try again.');
       } finally {
         setLoading(false);
       }
@@ -54,22 +56,9 @@ export default function FeaturedProducts() {
   }, [mounted]);
 
   useEffect(() => {
-    if (!mounted || allProducts.length === 0) return;
+    if (!mounted) return;
     
-    setLoading(true);
-    // Simulate loading for better UX
-    const timer = setTimeout(() => {
-      if (activeCategory === 'All') {
-        setFilteredProducts(allProducts.slice(0, 6));
-      } else {
-        setFilteredProducts(
-          allProducts.filter((p) => p.category === activeCategory)
-        );
-      }
-      setLoading(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
+    setFilteredProducts(activeCategory === 'All' ? allProducts.slice(0, 8) : allProducts.filter(p => p.category === activeCategory).slice(0,8));
   }, [activeCategory, allProducts, mounted]);
   
 
@@ -91,7 +80,6 @@ export default function FeaturedProducts() {
               variant={activeCategory === category.name ? 'default' : 'outline'}
               onClick={() => {
                 if(activeCategory !== category.name) {
-                  setLoading(true);
                   setActiveCategory(category.name);
                 }
               }}
@@ -103,7 +91,9 @@ export default function FeaturedProducts() {
             </Button>
           ))}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {error && <p role="alert" className="mb-6 text-center text-destructive">{error}</p>}
+        {!loading && !error && !filteredProducts.length && <p className="py-10 text-center text-muted-foreground">Fresh gear is on its way. Try another sport or list your own.</p>}
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-5">
           {!mounted || loading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex flex-col gap-4">

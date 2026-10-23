@@ -1,45 +1,31 @@
 'use client';
-
 import * as React from 'react';
-
-export type AuthContextType = {
-  isLoggedIn: boolean;
-  login: () => void;
-  logout: () => void;
-};
-
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
-
+import type { User } from '@/types/user';
+type Auth = { isLoggedIn: boolean; loading: boolean; user: User | null; login: () => Promise<void>; logout: () => Promise<void> };
+const AuthContext = React.createContext<Auth | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-
-  // Simple localStorage-backed auth flag to match current Header behavior
-  React.useEffect(() => {
-    const flag = typeof window !== 'undefined' && window.localStorage.getItem('isLoggedIn') === 'true';
-    setIsLoggedIn(flag);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const login = React.useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/me', { cache: 'no-store' });
+      const data = await response.json();
+      const current = response.ok && data.success ? data.user : null;
+      setUser(current);
+      if (current) { localStorage.setItem('isLoggedIn','true'); localStorage.setItem('userProfile', JSON.stringify(current)); }
+      else { localStorage.removeItem('isLoggedIn'); localStorage.removeItem('userProfile'); }
+    } catch { setUser(null); } finally { setLoading(false); }
   }, []);
-
-  const login = React.useCallback(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('isLoggedIn', 'true');
-    }
-    setIsLoggedIn(true);
+  React.useEffect(() => { void login(); window.addEventListener('storage', login); return () => window.removeEventListener('storage', login); }, [login]);
+  const logout = React.useCallback(async () => {
+    const response = await fetch('/api/auth/logout', { method: 'POST' });
+    if (!response.ok) throw new Error('Could not sign out');
+    setUser(null);
+    for (const key of ['isLoggedIn','userProfile','userAddresses','userPaymentMethods']) localStorage.removeItem(key);
+    sessionStorage.removeItem('selectedAddress');
+    window.dispatchEvent(new Event('storage'));
+    window.location.assign('/');
   }, []);
-
-  const logout = React.useCallback(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('isLoggedIn');
-    }
-    setIsLoggedIn(false);
-  }, []);
-
-  const value = React.useMemo(() => ({ isLoggedIn, login, logout }), [isLoggedIn, login, logout]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ isLoggedIn: !!user, loading, user, login, logout }}>{children}</AuthContext.Provider>;
 }
-
-export function useAuth() {
-  const ctx = React.useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
-  return ctx;
-}
+export function useAuth() { const context = React.useContext(AuthContext); if (!context) throw new Error('AuthProvider is required'); return context; }

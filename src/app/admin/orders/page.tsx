@@ -45,7 +45,7 @@ import { type Order } from '@/types/user';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { autoTable } from 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';
 
 interface jsPDFWithAutoTable extends jsPDF {
@@ -151,7 +151,7 @@ export default function AdminOrdersPage() {
             tableRows.push(orderData);
         });
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 30,

@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
@@ -29,6 +30,8 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { addItem } = useCart();
+  const { isLoggedIn } = useAuth();
+  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const { toast } = useToast();
   
   const productId = typeof params.id === 'string' ? params.id : '';
@@ -48,6 +51,9 @@ export default function ProductDetailPage() {
         const data = await response.json();
         if (data.success) {
           setProduct(data.product);
+          const related = await fetch('/api/products?available=true&limit=4&category=' + encodeURIComponent(data.product.category));
+          const suggestions = await related.json();
+          if (suggestions.success) setSuggestedProducts(suggestions.products.filter((p: Product) => p.id !== productId).slice(0,3));
           setSelectedImage(data.product.image);
         }
       } catch (error) {
@@ -88,7 +94,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    const loggedIn = isLoggedIn;
     if (!loggedIn) {
       savePurchaseIntent({
         action: 'add',
@@ -101,12 +107,12 @@ export default function ProductDetailPage() {
       router.push(`/login?redirect=${encodeURIComponent(`/products/${productId}`)}`);
       return;
     }
-    addItem({ ...product, quantity });
+    addItem(product, quantity);
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    const loggedIn = isLoggedIn;
     if (!loggedIn) {
       savePurchaseIntent({
         action: 'buy',
@@ -119,7 +125,7 @@ export default function ProductDetailPage() {
       router.push(`/login?redirect=${encodeURIComponent(`/products/${productId}`)}`);
       return;
     }
-    addItem({ ...product, quantity });
+    addItem(product, quantity);
     // Try to preselect default address if present
     try {
       const stored = localStorage.getItem('userAddresses');
@@ -132,30 +138,7 @@ export default function ProductDetailPage() {
     router.push('/checkout');
   };
 
-  // For now, we'll use placeholder suggested products
-  // In a real app, you'd fetch related products from the API
-  const suggestedProducts = [
-    {
-      id: 'suggested1',
-      name: 'Similar Product 1',
-      category: product.category,
-      type: 'preowned',
-      price: 1500,
-              image: '/images/products/background.jpg',
-      badge: 'Inspected'
-    },
-    {
-      id: 'suggested2',
-      name: 'Similar Product 2',
-      category: product.category,
-      type: 'new',
-      price: 2000,
-              image: '/images/products/background.jpg',
-      badge: 'Bestseller'
-    }
-  ];
-  
-  const allImages = [product.image, ...(product.images || [])].filter(Boolean);
+  const allImages = Array.from(new Set([product.image, ...(product.images || [])].filter(Boolean)));
 
   const gradeTooltip = {
     A: "Looks like new, with minimal to no signs of use.",
@@ -168,7 +151,7 @@ export default function ProductDetailPage() {
     <div className="container py-12 md:py-16">
       <div className="grid lg:grid-cols-2 gap-12 items-start">
         {/* Image Gallery */}
-        <div className="flex flex-col gap-4 sticky top-24">
+        <div className="flex flex-col gap-4 lg:sticky lg:top-24">
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               <Image
@@ -226,7 +209,7 @@ export default function ProductDetailPage() {
                 </TooltipProvider>
              )}
              <Badge variant="outline" className="text-lg py-1 px-3 border-green-500 bg-green-50 text-green-700 flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4" /> KHELWAPAS Assured
+                <ShieldCheck className="h-4 w-4" /> Reviewed listing
              </Badge>
           </div>
 
@@ -255,18 +238,18 @@ export default function ProductDetailPage() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex items-center gap-2 border rounded-md p-1">
-               <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity === 1}>
+               <Button variant="ghost" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity === 1}>
                     <Minus className="h-4 w-4" />
                 </Button>
                 <span className="font-bold text-lg w-12 text-center">{quantity}</span>
-                <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)}>
+                <Button variant="ghost" size="icon" aria-label="Increase quantity" disabled={quantity >= (product.stock || 1)} onClick={() => setQuantity(quantity + 1)}>
                     <Plus className="h-4 w-4" />
                 </Button>
             </div>
-            <Button size="lg" className="w-full sm:w-auto font-bold flex-grow" onClick={handleAddToCart}>
+            <Button size="lg" className="w-full sm:w-auto font-bold flex-grow" disabled={product.status === 'Out of Stock'} onClick={handleAddToCart}>
               <ShoppingCart className="mr-2" /> Add to Cart
             </Button>
-             <Button size="lg" variant="secondary" className="w-full sm:w-auto font-bold flex-grow" onClick={handleBuyNow}>
+             <Button size="lg" variant="secondary" className="w-full sm:w-auto font-bold flex-grow" disabled={product.status === 'Out of Stock'} onClick={handleBuyNow}>
               <Zap className="mr-2" /> Buy Now
             </Button>
           </div>

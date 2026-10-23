@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { SPORTS_CATEGORIES } from '@/lib/categories';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,9 +37,9 @@ const manualSellSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
   email: z.string().email('Please enter a valid email address.'),
   category: z.string().min(1, 'Please select a category.'),
-  title: z.string().min(5, 'Title must be at least 5 characters.'),
+  title: z.string().min(5, 'Title must be at least 3 characters.'),
   description: z.string().min(20, 'Description must be at least 20 characters.'),
-  price: z.coerce.number().min(1, 'Please enter a valid price.'),
+  price: z.coerce.number<number>().min(1, 'Please enter a valid price.'),
   contactMethod: z.enum(['Email', 'Phone', 'WhatsApp']),
   contactDetail: z.string().optional(),
 }).refine(data => {
@@ -73,7 +74,7 @@ export default function ManualSellForm() {
   });
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: { 'image/*': [] },
+    accept: { 'image/jpeg': [], 'image/png': [], 'image/webp': [] },
     onDrop: acceptedFiles => {
       if (files.length + acceptedFiles.length > 10) {
         toast({
@@ -93,13 +94,15 @@ export default function ManualSellForm() {
     }
   });
 
-  const removeFile = (fileToRemove: File) => {
+  const removeFile = (fileToRemove: File & { preview?: string }) => {
+    if (fileToRemove.preview) URL.revokeObjectURL(fileToRemove.preview);
     setFiles(files => files.filter(file => file !== fileToRemove));
   };
   
   async function onSubmit(data: ManualSellFormValues) {
-    if (files.length < 5) {
-        form.setError('root.images', { type: 'manual', message: 'Please upload at least 5 images.' });
+    if (loading) return;
+    if (files.length < 3) {
+        form.setError('root.images', { type: 'manual', message: 'Please upload at least 3 images.' });
         return;
     }
       
@@ -133,6 +136,7 @@ export default function ManualSellForm() {
         description: 'Your sell request has been submitted. We will get back to you shortly.',
       });
       form.reset();
+      files.forEach(f => URL.revokeObjectURL(f.preview));
       setFiles([]);
     } catch (error: any) {
       toast({
@@ -182,12 +186,7 @@ export default function ManualSellForm() {
                                         <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="Cricket">Cricket</SelectItem>
-                                        <SelectItem value="Football">Football</SelectItem>
-                                        <SelectItem value="Badminton">Badminton</SelectItem>
-                                        <SelectItem value="Tennis">Tennis</SelectItem>
-                                        <SelectItem value="Hockey">Hockey</SelectItem>
-                                        <SelectItem value="Other">Other</SelectItem>
+                                        {SPORTS_CATEGORIES.map(sport => <SelectItem key={sport} value={sport}>{sport}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -232,7 +231,7 @@ export default function ManualSellForm() {
                                 <p className="mt-4 text-sm text-muted-foreground">
                                     {isDragActive ? 'Drop the files here...' : 'Drag & drop images here, or click to select'}
                                 </p>
-                                <p className="text-xs text-muted-foreground/80">PNG, JPG, up to 10MB each</p>
+                                <p className="text-xs text-muted-foreground/80">3–10 JPEG, PNG or WebP images. Up to 5 MB each, 25 MB total.</p>
                                 <Input {...getInputProps()} />
                             </div>
                         </div>

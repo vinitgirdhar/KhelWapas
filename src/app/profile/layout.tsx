@@ -2,6 +2,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { User, ShoppingBag, MapPin, CreditCard, LogOut } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -26,7 +28,7 @@ const sidebarNavItems = [
     icon: <MapPin className="h-4 w-4" />,
   },
   {
-    title: 'Payment Methods',
+    title: 'Demo Payments',
     href: '/profile/payment',
     icon: <CreditCard className="h-4 w-4" />,
   },
@@ -46,13 +48,9 @@ export default function ProfileLayout({
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userProfile');
-    window.dispatchEvent(new Event('storage')); // Notify other tabs/windows
-    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
-    router.push('/');
-  };
+  const { isLoggedIn, loading, logout: handleLogout } = useAuth();
+  useEffect(() => { if (!loading && !isLoggedIn) router.replace('/login?redirect=' + encodeURIComponent(pathname)); }, [loading, isLoggedIn, router, pathname]);
+  if (loading || !isLoggedIn) return <div className="container py-20" role="status">Loading your account…</div>;
 
   return (
     <div className="container space-y-12 py-12">
@@ -66,13 +64,12 @@ export default function ProfileLayout({
       </header>
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
         <aside className="lg:w-1/5">
-          <nav className="flex flex-col space-y-1">
+          <nav className="flex overflow-x-auto gap-1 lg:flex-col lg:space-y-1">
             {sidebarNavItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant="ghost"
+              <Link key={item.href} href={item.href} className="shrink-0">
+                <span
                   className={cn(
-                    'w-full justify-start gap-2',
+                    'inline-flex w-full items-center justify-start gap-2 rounded-xl px-4 py-3 text-sm font-medium',
                     pathname === item.href
                       ? 'bg-muted hover:bg-muted'
                       : 'hover:bg-transparent hover:underline'
@@ -80,7 +77,7 @@ export default function ProfileLayout({
                 >
                   {item.icon}
                   {item.title}
-                </Button>
+                </span>
               </Link>
             ))}
              <Separator className="my-2"/>

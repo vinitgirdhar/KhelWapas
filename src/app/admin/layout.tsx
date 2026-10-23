@@ -26,6 +26,7 @@ export default function AdminLayout({
 
     const navItems = [
         { href: "/admin/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard" },
+        { href: "/admin/requests", icon: <Package className="h-5 w-5" />, label: "Sell requests" },
         { href: "/admin/orders", icon: <ShoppingCart className="h-5 w-5" />, label: "Orders" },
         { href: "/admin/pickups", icon: <Truck className="h-5 w-5" />, label: "Pickups" },
         { href: "/admin/products", icon: <Package className="h-5 w-5" />, label: "Products" },
@@ -73,6 +74,7 @@ export default function AdminLayout({
           </aside>
         </TooltipProvider>
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 w-full">
+          <nav aria-label="Admin mobile navigation" className="flex gap-2 overflow-x-auto border-b bg-white p-3 sm:hidden">{navItems.map(item => <Link key={item.href} href={item.href} className={cn("shrink-0 rounded-full px-3 py-2 text-sm", pathname === item.href && "bg-primary text-white")}>{item.label}</Link>)}</nav>
           {children}
         </div>
       </div>

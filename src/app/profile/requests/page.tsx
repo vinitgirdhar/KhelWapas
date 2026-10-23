@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 type Request = {
   id: string
+  reviewReason?: string
+  product?: { id: string; isAvailable: boolean; stock: number }
   title: string
   status: 'Pending' | 'Approved' | 'Rejected'
   createdAt: string
@@ -13,6 +16,7 @@ type Request = {
 
 export default function ProfileSellRequestsPage() {
   const [requests, setRequests] = useState<Request[]>([])
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,8 +24,9 @@ export default function ProfileSellRequestsPage() {
       try {
         const res = await fetch('/api/profile/sell-requests')
         const data = await res.json()
+        if (!res.ok) throw new Error(data.message || 'Could not load requests')
         if (data.success) setRequests(data.sellRequests)
-      } finally {
+      } catch(e) { setError((e as Error).message) } finally {
         setLoading(false)
       }
     }
@@ -35,6 +40,7 @@ export default function ProfileSellRequestsPage() {
         <CardDescription>Your submitted sale requests and status</CardDescription>
       </CardHeader>
       <CardContent>
+        {error && <p role="alert" className="text-destructive">{error}</p>}
         {loading ? (
           <div className="py-8 text-center">Loading...</div>
         ) : requests.length === 0 ? (
@@ -45,6 +51,8 @@ export default function ProfileSellRequestsPage() {
               <div key={req.id} className="flex items-center justify-between border rounded-md p-3">
                 <div>
                   <div className="font-medium">{req.title}</div>
+                  {req.reviewReason && <p className="mt-1 text-sm text-muted-foreground">Review note: {req.reviewReason}</p>}
+                  {req.product && <Link href={`/products/${req.product.id}`} className="text-sm text-primary underline">{req.product.stock > 0 ? 'View your listing' : 'Sold · View listing'}</Link>}
                   <div className="text-xs text-muted-foreground">{new Date(req.createdAt).toLocaleString()}</div>
                 </div>
                 <Badge variant="outline">{req.status}</Badge>

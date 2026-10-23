@@ -1,3 +1,4 @@
+import { pagination, apiError } from '@/lib/api';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
@@ -15,9 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Pagination support
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const skip = (page - 1) * limit
+    const { page, limit, skip } = pagination(searchParams, 50)
 
     const users = await prisma.user.findMany({
       select: {
@@ -25,6 +24,9 @@ export async function GET(request: NextRequest) {
         fullName: true,
         email: true,
         role: true,
+        status: true,
+        phone: true,
+        rating: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -45,11 +47,5 @@ export async function GET(request: NextRequest) {
       success: true,
       users
     })
-  } catch (error) {
-    console.error('Get users error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+  } catch (error) { return apiError(error); }
 }

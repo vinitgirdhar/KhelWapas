@@ -2,6 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 import Head from 'next/head';
+import PageMotion from '@/components/motion/page-motion';
+import MobileNav from './mobile-nav';
 import { cn } from '@/lib/utils';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
@@ -14,14 +16,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isInvoiceRoute = pathname.startsWith('/invoice');
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
+    <PageMotion><div className={cn("relative flex min-h-dvh flex-col", !isAdminRoute && !isInvoiceRoute && "pb-24 md:pb-0")}>
+      <a href="#main-content" className="skip-link">Skip to content</a>
       {isInvoiceRoute && (
         <Head>
           <link rel="stylesheet" href="/invoice-print.css" />
         </Head>
       )}
       {isAdminRoute || isInvoiceRoute ? null : <Header />}
-      <main
+      <main id="main-content" tabIndex={-1}
         className={cn('flex-1', {
           'bg-muted/40': isAdminRoute,
           'bg-gray-100': isInvoiceRoute,
@@ -31,7 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       {isAdminRoute || isInvoiceRoute ? null : <Footer />}
       <Toaster />
-      {!isAdminRoute && <KhelbotWidget />}
-    </div>
+      {!isAdminRoute && !isInvoiceRoute && <>{!pathname.startsWith('/checkout') && pathname !== '/cart' && <KhelbotWidget />}<MobileNav /></>}
+    </div></PageMotion>
   );
 }

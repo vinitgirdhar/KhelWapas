@@ -100,8 +100,10 @@ export default function AdminProductsPage() {
     };
     
     const handleDeleteProduct = async (productId: string) => {
-        // TODO: Implement delete API call
-        setProducts(products.filter(p => p.id !== productId));
+        const response = await fetch(`/api/products/${productId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isAvailable: false }) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Could not archive product');
+        await fetchProducts();
     };
 
     const getProductsForTab = (tab: string) => {
@@ -194,7 +196,7 @@ export default function AdminProductsPage() {
 }
 
 
-function ProductTable({ products, onDelete, loading }: { products: Product[], onDelete: (id: string) => void, loading: boolean }) {
+function ProductTable({ products, onDelete, loading }: { products: Product[], onDelete: (id: string) => Promise<void>, loading: boolean }) {
     const { toast } = useToast();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const [productToDelete, setProductToDelete] = React.useState<Product | null>(null);
@@ -206,17 +208,13 @@ function ProductTable({ products, onDelete, loading }: { products: Product[], on
         });
     };
     
-    const confirmDelete = () => {
-        if (productToDelete) {
-            onDelete(productToDelete.id);
-            toast({
-                variant: 'destructive',
-                title: 'Product Deleted',
-                description: `${productToDelete.name} has been deleted.`,
-            });
-            setProductToDelete(null);
-        }
-        setIsDeleteDialogOpen(false);
+    const confirmDelete = async () => {
+        if (!productToDelete) return;
+        try {
+            await onDelete(productToDelete.id);
+            toast({ title: 'Product archived', description: 'The listing is no longer available for purchase.' });
+            setProductToDelete(null); setIsDeleteDialogOpen(false);
+        } catch(e) { toast({ title: (e as Error).message, variant: 'destructive' }); }
     };
 
     return (

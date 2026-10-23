@@ -11,7 +11,7 @@ export default function Home() {
         {/* Wrap sections with a div for glassmorphism effect if needed, or apply to individual components */}
         <Hero />
         <div className="glassmorphic-container">
-          <FeatureCards />
+          <div id="discover" className="scroll-mt-24"><FeatureCards /></div>
         </div>
         <div className="glassmorphic-container">
           <FeaturedProducts />

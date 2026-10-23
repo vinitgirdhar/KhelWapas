@@ -99,7 +99,7 @@ export default function KhelbotWidget() {
                 {isOpen && (
                     <div
                         className={cn(
-                            "w-[380px] h-[600px] transition-all duration-300 origin-bottom-right mb-4 scale-100 opacity-100"
+                            "w-[min(380px,calc(100vw-2rem))] h-[min(600px,65dvh)] transition-all duration-300 origin-bottom-right mb-4 scale-100 opacity-100"
                         )}
                     >
                         <div className="glass-container w-full h-full rounded-lg">

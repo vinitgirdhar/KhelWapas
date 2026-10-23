@@ -44,7 +44,7 @@ const addressSchema = z.object({
   state: z.string().min(2, 'State is required.'),
   postalCode: z.string().min(5, 'A valid postal code is required.'),
   country: z.string().min(2, 'Country is required.'),
-  isDefault: z.boolean().default(false),
+  isDefault: z.boolean(),
 });
 
 type AddressFormValues = z.infer<typeof addressSchema>;

@@ -102,8 +102,8 @@ export default function AdminUsersPage() {
             name: u.fullName || u.name || 'Unnamed',
             email: u.email,
             role: (u.role === 'admin' ? 'Admin' : 'User'),
-            status: 'Active', // default until status field exists
-            rating: 5, // static placeholder; could be average of reviews
+            status: u.status,
+            rating: u.rating ?? 0,
             registrationDate: u.createdAt || new Date().toISOString(),
             avatar: u.profilePicture || '/images/products/background.jpg'
           }));
@@ -119,23 +119,6 @@ export default function AdminUsersPage() {
     const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
         const term = event.target.value.toLowerCase();
         setSearchTerm(term);
-        if (term) {
-            setUsers(users.filter(u => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term)));
-        } else {
-            // Reset to all users from the fetched data
-            const fetchUsers = async () => {
-                try {
-                    const response = await fetch('/api/admin/users');
-                    const data = await response.json();
-                    if (data.success) {
-                        setUsers(data.users);
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch users:', error);
-                }
-            };
-            fetchUsers();
-        }
     };
     
   const handleOpenAlert = (user: AdminUIUser, type: 'Block' | 'Unblock') => {
@@ -144,36 +127,22 @@ export default function AdminUsersPage() {
         setIsAlertDialogOpen(true);
     };
 
-    const confirmAction = () => {
-        if (userToAction && actionType) {
-            const newStatus = actionType === 'Block' ? 'Blocked' : 'Active';
-            // Placeholder: would call an API to change status when implemented
-            // Refresh the user list from API
-            const fetchUsers = async () => {
-                try {
-                    const response = await fetch('/api/admin/users');
-                    const data = await response.json();
-                    if (data.success) {
-                        setUsers(data.users);
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch users:', error);
-                }
-            };
-            fetchUsers();
-            toast({
-                title: `User ${actionType}ed`,
-                description: `${userToAction.name} has been ${actionType.toLowerCase()}ed.`,
-            });
-        }
-        setIsAlertDialogOpen(false);
-        setUserToAction(null);
-        setActionType(null);
+    const confirmAction = async () => {
+        if (!userToAction || !actionType) return;
+        try {
+            const response = await fetch(`/api/admin/users/${userToAction.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: actionType === 'Block' ? 'Blocked' : 'Active' }) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Could not update user');
+            setUsers(previous => previous.map(user => user.id === userToAction.id ? { ...user, status: result.user.status } : user));
+            toast({ title: `User ${actionType.toLowerCase()}ed` });
+            setIsAlertDialogOpen(false); setUserToAction(null); setActionType(null);
+        } catch(e) { toast({ title: (e as Error).message, variant: 'destructive' }); }
     };
 
     const getUsersForTab = (tab: string) => {
-        if (tab === 'all') return users;
-        return users.filter(u => u.role.toLowerCase() === tab);
+        const filtered = users.filter(u => u.name.toLowerCase().includes(searchTerm) || u.email.toLowerCase().includes(searchTerm));
+        if (tab === 'all') return filtered;
+        return filtered.filter(u => u.role.toLowerCase() === tab);
     };
 
   return (

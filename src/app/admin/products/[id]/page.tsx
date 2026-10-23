@@ -46,6 +46,7 @@ interface FileWithPreview {
 }
 
 export default function ProductFormPage() {
+    const [isSaving, setIsSaving] = useState(false);
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -79,7 +80,7 @@ export default function ProductFormPage() {
                         setPrice(product.price?.toString() ?? '');
                         setOriginalPrice((product.originalPrice ?? '').toString());
                         setSku(product.sku);
-                        setStock(product.status === 'In Stock' ? 1 : 0);
+                        setStock(product.stock ?? 0);
                         setStatus(product.status);
                         setType(product.type);
                         setCategory(product.category);
@@ -233,11 +234,14 @@ export default function ProductFormPage() {
     };
 
     const handleSave = async () => {
+        if (isUploading || isSaving) return;
+        setIsSaving(true);
+        try {
         if (!isEditing) {
             // Create new product
             try {
                 // First upload images if there are new files
-                let imageUrls: string[] = [];
+                let imageUrls: string[] = files.map(file => file.originalUrl).filter((url): url is string => !!url);
                 
                 const newFilesToUpload = files.filter(f => f.file && !f.isExisting);
                 
@@ -257,7 +261,7 @@ export default function ProductFormPage() {
                     if (uploadResponse.ok) {
                         const uploadData = await uploadResponse.json();
                         if (uploadData.success && uploadData.files) {
-                            imageUrls = uploadData.files;
+                            imageUrls = [...imageUrls, ...uploadData.files];
                         } else {
                             throw new Error(uploadData.message || 'Failed to get image URLs from upload response');
                         }
@@ -272,10 +276,11 @@ export default function ProductFormPage() {
                     name,
                     category,
                     type,
-                    price,
-                    originalPrice,
+                    price: Number(price),
+                    originalPrice: originalPrice ? Number(originalPrice) : null,
                     description,
                     isAvailable: status === 'In Stock',
+                    stock: Number(stock),
                     imageUrls,
                     specs: {}
                 };
@@ -284,7 +289,6 @@ export default function ProductFormPage() {
                 if (badge) payload.badge = badge;
                 if (grade) payload.grade = grade;
                 
-                console.log('Creating new product with payload:', payload);
                 
                 const createResponse = await fetch('/api/products/create', {
                     method: 'POST',
@@ -325,10 +329,11 @@ export default function ProductFormPage() {
                     name,
                     category,
                     type,
-                    price,
-                    originalPrice,
+                    price: Number(price),
+                    originalPrice: originalPrice ? Number(originalPrice) : null,
                     description,
                     isAvailable: status === 'In Stock',
+                    stock: Number(stock),
                     badge: badge ?? null,
                     grade: grade ?? null,
                 }
@@ -340,13 +345,6 @@ export default function ProductFormPage() {
 
                 payload.imageUrls = allImageUrls;
 
-                console.log('=== DEBUGGING PRODUCT UPDATE ===');
-                console.log('Product ID:', productId);
-                console.log('Payload being sent:', JSON.stringify(payload, null, 2));
-                console.log('Form state - badge:', badge);
-                console.log('Form state - grade:', grade);
-                console.log('Form state - status:', status);
-                console.log('Image URLs:', allImageUrls);
 
                 const res = await fetch(`/api/products/${productId}`, {
                     method: 'PATCH',
@@ -354,21 +352,16 @@ export default function ProductFormPage() {
                     body: JSON.stringify(payload),
                 })
 
-                console.log('Response status:', res.status);
-                console.log('Response ok:', res.ok);
-                console.log('Response headers:', Object.fromEntries(res.headers.entries()));
 
                 let data;
                 try {
                     const responseText = await res.text();
-                    console.log('Raw response text:', responseText);
                     data = responseText ? JSON.parse(responseText) : {};
                 } catch (parseError) {
                     console.error('Failed to parse response as JSON:', parseError);
                     data = {};
                 }
 
-                console.log('Parsed response data:', JSON.stringify(data, null, 2));
 
                 if (!res.ok || !data.success) {
                     console.error('Backend validation failed:', {
@@ -420,6 +413,7 @@ export default function ProductFormPage() {
         } else {
             toast({ variant: 'destructive', title: 'Invalid product', description: 'Missing product id' })
         }
+        } finally { setIsSaving(false); }
     }
 
     // Cleanup object URLs when component unmounts
@@ -485,7 +479,7 @@ export default function ProductFormPage() {
                         <Button variant="outline" size="sm" onClick={() => router.push('/admin/products')}>
                             Discard
                         </Button>
-                        <Button size="sm" onClick={handleSave}>Save Product</Button>
+                        <Button size="sm" disabled={isUploading || isSaving} onClick={handleSave}>Save Product</Button>
                     </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
@@ -738,7 +732,7 @@ export default function ProductFormPage() {
                     <Button variant="outline" size="sm" onClick={() => router.push('/admin/products')}>
                         Discard
                     </Button>
-                    <Button size="sm" onClick={handleSave}>Save Product</Button>
+                    <Button size="sm" disabled={isUploading || isSaving} onClick={handleSave}>Save Product</Button>
                 </div>
             </div>
         </main>

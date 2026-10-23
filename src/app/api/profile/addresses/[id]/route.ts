@@ -1,82 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-interface RouteParams {
-  params: { id: string };
-}
-
-// PUT /api/profile/addresses/[id] - Update address
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+import { requireUser } from '@/lib/auth';
+import { apiError, ApiError } from '@/lib/api';
+import { addressUpdateSchema } from '@/lib/validation';
+type Context = { params: Promise<{ id: string }> };
+export async function PUT(request: NextRequest, { params }: Context) {
   try {
-    const { id } = params;
-    const addressData = await request.json();
-    const { userId, title, fullName, phone, street, city, state, postalCode, country, isDefault } = addressData;
-
-    // Verify the address belongs to the user
-    const existingAddress = await prisma.address.findFirst({
-      where: { id, userId },
+    const user = await requireUser(request), { id } = await params;
+    const data = addressUpdateSchema.parse(await request.json());
+    const result = await prisma.$transaction(async tx => {
+      if (!await tx.address.findFirst({ where: { id, userId: user.userId } })) throw new ApiError(404, 'Address not found');
+      if (data.isDefault) await tx.address.updateMany({ where: { userId: user.userId }, data: { isDefault: false } });
+      return tx.address.update({ where: { id }, data });
     });
-
-    if (!existingAddress) {
-      return NextResponse.json({ error: 'Address not found' }, { status: 404 });
-    }
-
-    // If this is set as default, unset all other default addresses for this user
-    if (isDefault) {
-      await prisma.address.updateMany({
-        where: { userId, NOT: { id } },
-        data: { isDefault: false },
-      });
-    }
-
-    const updatedAddress = await prisma.address.update({
-      where: { id },
-      data: {
-        title,
-        fullName,
-        phone,
-        street,
-        city,
-        state,
-        postalCode,
-        country,
-        isDefault,
-      },
-    });
-
-    return NextResponse.json(updatedAddress);
-  } catch (error) {
-    console.error('Error updating address:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(result);
+  } catch (e) { return apiError(e); }
 }
-
-// DELETE /api/profile/addresses/[id] - Delete address
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: Context) {
   try {
-    const { id } = params;
-    const userId = request.nextUrl.searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
-
-    // Verify the address belongs to the user
-    const existingAddress = await prisma.address.findFirst({
-      where: { id, userId },
-    });
-
-    if (!existingAddress) {
-      return NextResponse.json({ error: 'Address not found' }, { status: 404 });
-    }
-
-    await prisma.address.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ message: 'Address deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting address:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    const user = await requireUser(request), { id } = await params;
+    const result = await prisma.address.deleteMany({ where: { id, userId: user.userId } });
+    if (!result.count) throw new ApiError(404, 'Address not found');
+    return NextResponse.json({ success: true });
+  } catch (e) { return apiError(e); }
 }

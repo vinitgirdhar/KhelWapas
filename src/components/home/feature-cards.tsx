@@ -4,18 +4,18 @@ import { Truck, CheckCircle, Zap } from "lucide-react";
 const features = [
   {
     icon: <Truck className="h-8 w-8 text-primary" />,
-    title: "Free Doorstep Pickup",
-    description: "Schedule a pickup, and we'll collect your used gear from your home, hassle-free."
+    title: "Simple Selling",
+    description: "Upload photos, describe your equipment, and submit your listing for review."
   },
   {
     icon: <Zap className="h-8 w-8 text-primary" />,
-    title: "Instant Payment",
-    description: "Our team grades your gear on-site. Accept the offer and get paid instantly."
+    title: "More Value. More Play.",
+    description: "Find equipment for your next game, with clear pricing and condition details."
   },
   {
     icon: <CheckCircle className="h-8 w-8 text-primary" />,
-    title: "Assured Quality",
-    description: "Every pre-owned item is thoroughly inspected and graded, so you buy with confidence."
+    title: "Reviewed Listings",
+    description: "Listings are reviewed before they go live, with photos and condition grades to guide you."
   }
 ];
 

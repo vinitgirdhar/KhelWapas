@@ -33,7 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const formSchema = z.object({
   equipmentType: z.string().min(3, 'Please enter a valid equipment type.'),
   equipmentGrade: z.enum(['A', 'B', 'C', 'D']),
-  equipmentAge: z.coerce.number().min(0, 'Age must be a positive number.'),
+  equipmentAge: z.coerce.number<number>().min(0, 'Age must be a positive number.'),
   equipmentConditionDescription: z
     .string()
     .min(10, 'Please provide a more detailed description.'),
@@ -62,7 +62,7 @@ export default function PriceEstimator() {
     setResult(null);
     setError(null);
     try {
-      const estimation = await estimateResalePrice(values);
+      const estimation = await estimateResalePrice({ ...values, pastSalesData: values.pastSalesData || '' });
       setResult(estimation);
     } catch (e) {
       console.error(e);
@@ -81,7 +81,7 @@ export default function PriceEstimator() {
             </div>
             <div>
                 <CardTitle className="font-headline text-2xl">
-                AI Price Estimator
+                Price guide
                 </CardTitle>
                 <CardDescription>Get an instant resale value estimate.</CardDescription>
             </div>

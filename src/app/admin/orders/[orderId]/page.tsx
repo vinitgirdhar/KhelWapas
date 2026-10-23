@@ -55,8 +55,8 @@ import { format } from 'date-fns';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 
-type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
-type PaymentStatus = 'paid' | 'pending' | 'refunded' | 'partially_paid';
+type OrderStatus = 'PaymentFailed' | 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
+type PaymentStatus = 'failed' | 'paid' | 'pending' | 'refunded' | 'partially_paid';
 
 interface OrderItem {
   productId: string;
@@ -80,6 +80,7 @@ interface OrderDetails {
   };
   items: OrderItem[];
   amount: number;
+  shippingFee?: number;
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: string;
@@ -116,6 +117,7 @@ interface OrderDetails {
 }
 
 const statusConfig: Record<OrderStatus, { color: string; icon: React.ReactNode }> = {
+  PaymentFailed: { color: 'text-red-800 bg-red-100', icon: <XCircle className="h-4 w-4" /> },
   Pending: { 
     color: 'text-yellow-800 bg-yellow-100',
     icon: <Clock className="h-4 w-4" />
@@ -143,6 +145,7 @@ const statusConfig: Record<OrderStatus, { color: string; icon: React.ReactNode }
 };
 
 const paymentStatusConfig: Record<PaymentStatus, string> = {
+  failed: 'text-red-800 bg-red-100',
   paid: 'text-green-800 bg-green-100',
   pending: 'text-yellow-800 bg-yellow-100',
   refunded: 'text-red-800 bg-red-100',
@@ -365,8 +368,7 @@ export default function OrderDetailsPage() {
   }
 
   const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.18; // 18% GST
-  const shipping = 50; // Flat shipping
+  const shipping = order.shippingFee ?? 50;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -465,10 +467,6 @@ export default function OrderDetailsPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tax (GST 18%)</span>
-                <span>₹{tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
@@ -614,7 +612,7 @@ export default function OrderDetailsPage() {
                 <div>
                   <p className="font-medium">{order.customer.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {order.customer.totalOrders} orders
+                    View customer account for order history
                   </p>
                 </div>
               </div>

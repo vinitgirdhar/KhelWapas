@@ -3,6 +3,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, Clock, XCircle, Mail, Phone, MessageSquare } from 'lucide-react';
 import { type SellRequest } from '@/types/user';
@@ -23,7 +24,8 @@ const contactConfig = {
     WhatsApp: <MessageSquare className="h-4 w-4" />,
 }
 
-export default function SellRequestDetailPage({ params }: { params: { id: string } }) {
+export default function SellRequestDetailPage() {
+  const params = useParams<{ id: string }>();
   const [request, setRequest] = useState<SellRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [reason, setReason] = useState('');

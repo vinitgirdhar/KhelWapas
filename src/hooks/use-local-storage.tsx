@@ -1,34 +1,13 @@
 'use client';
-
-import { useState, useEffect } from 'react';
-
-/**
- * Custom hook to manage state in localStorage.
- * @param key The key to use in localStorage.
- * @param initialValue The initial value for the state.
- * @returns An array with the current value and a function to set the value.
- */
+import { useState, useEffect, useRef } from 'react';
+/** SSR starts from the same value; hydrate before persisting to avoid losing a saved bag. */
 export function useLocalStorage<T>(key: string, initialValue: T) {
-  // State to store our value
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const item = window.localStorage.getItem(key);
-        return item ? JSON.parse(item) : initialValue;
-      }
-      return initialValue;
-    } catch (error) {
-      console.error(error);
-      return initialValue;
-    }
-  });
-
-  // useEffect to update localStorage when the state changes
+  const initial = useRef(initialValue);
+  const [value, setValue] = useState<T>(initial.current), [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(key, JSON.stringify(storedValue));
-    }
-  }, [key, storedValue]);
-
-  return [storedValue, setStoredValue] as const;
+    try { const raw = localStorage.getItem(key); setValue(raw ? JSON.parse(raw) : initial.current); } catch { setValue(initial.current); }
+    setHydrated(true);
+  }, [key]);
+  useEffect(() => { if (hydrated) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Storage can be disabled by the browser. */ } } }, [key, value, hydrated]);
+  return [value, setValue] as const;
 }

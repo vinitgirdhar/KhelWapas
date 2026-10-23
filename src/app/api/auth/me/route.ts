@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         fullName: true,
+        phone: true,
+        profilePicture: true,
         email: true,
         role: true,
         createdAt: true,

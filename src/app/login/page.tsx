@@ -98,7 +98,7 @@ function LoginPageInner() {
 
         // Else follow redirect param or go home
         const redirect = searchParams.get('redirect');
-        router.push(redirect ? decodeURIComponent(redirect) : '/');
+        router.push(redirect?.startsWith('/') && !redirect.startsWith('//') && !redirect.includes('\\') ? redirect : '/');
       } else {
         toast({
           variant: 'destructive',

@@ -41,9 +41,9 @@ const addressSchema = z.object({
   street: z.string().min(5, 'Street address is required.'),
   city: z.string().min(2, 'City is required.'),
   state: z.string().min(2, 'State is required.'),
-  postalCode: z.string().min(5, 'A valid postal code is required.'),
+  postalCode: z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit PIN code.'),
   country: z.string().min(2, 'Country is required.'),
-  isDefault: z.boolean().default(false),
+  isDefault: z.boolean(),
 });
 
 type AddressFormValues = z.infer<typeof addressSchema>;
@@ -51,7 +51,7 @@ type AddressFormValues = z.infer<typeof addressSchema>;
 interface AddressDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (address: Address) => void;
+  onSave: (address: Address) => void | Promise<void>;
   address: Address | null;
 }
 
@@ -109,7 +109,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
     }
   }, [address, form]);
 
-  const onSubmit = (data: AddressFormValues) => {
+  const onSubmit = async (data: AddressFormValues) => {
     const addressData: Address = {
       id: address?.id || crypto.randomUUID(),
       userId: address?.userId || '', // Will be set by the parent component
@@ -124,8 +124,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
       isDefault: data.isDefault,
     };
 
-    onSave(addressData);
-    onOpenChange(false);
+    await onSave(addressData);
   };
 
   return (
@@ -309,7 +308,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
                 {address ? 'Update Address' : 'Save Address'}
               </Button>
             </DialogFooter>
