@@ -35,7 +35,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 function LoginPageInner() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<'account' | 'demo' | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,26 +51,28 @@ function LoginPageInner() {
     },
   });
 
-  async function onSubmit(data: LoginFormValues) {
-    setLoading(true);
+  async function signIn(data?: LoginFormValues) {
+    if (loading) return;
+    const isDemo = !data;
+    setLoading(isDemo ? 'demo' : 'account');
     
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(isDemo ? '/api/auth/demo' : '/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(data ?? {}),
       });
 
       const result = await response.json();
 
-      if (result.success) {
+      if (response.ok && result.success) {
         await login();
 
         toast({
-          title: 'Login Successful!',
-          description: `Welcome back, ${result.user.fullName}!`,
+          title: isDemo ? 'Your demo account is ready' : 'Login Successful!',
+          description: isDemo ? 'Explore your sample orders and try a simulated checkout.' : `Welcome back, ${result.user.fullName}!`,
         });
 
         // If we have a saved purchase intent, complete it
@@ -92,24 +94,24 @@ function LoginPageInner() {
           }
         }
 
-        // Else follow redirect param or go home
-        router.push(redirect);
+        // Demo visitors start with their sample history unless continuing a journey.
+        router.push(isDemo && !searchParams.get('redirect') ? '/profile/orders' : redirect);
       } else {
         toast({
           variant: 'destructive',
-          title: 'Login Failed',
-          description: result.message || 'Invalid credentials.',
+          title: isDemo ? 'Demo login unavailable' : 'Login Failed',
+          description: result.message || (isDemo ? 'Could not prepare your demo account. Please try again.' : 'Invalid credentials.'),
         });
       }
     } catch (error) {
       console.error('Login error:', error);
       toast({
         variant: 'destructive',
-        title: 'Login Error',
-        description: 'An error occurred during login. Please try again.',
+        title: isDemo ? 'Demo login unavailable' : 'Login Error',
+        description: 'Could not connect. Check your connection and try again.',
       });
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   }
 
@@ -131,7 +133,7 @@ function LoginPageInner() {
             </div>
           )}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(data => signIn(data))} className="space-y-6">
               <FormField
                 control={form.control}
                 name="email"
@@ -158,12 +160,19 @@ function LoginPageInner() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full font-bold" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Log In
+              <Button type="submit" className="w-full font-bold" disabled={!!loading}>
+                {loading === 'account' && <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />}
+                {loading === 'account' ? 'Logging in…' : 'Log In'}
               </Button>
             </form>
           </Form>
+          <Button type="button" variant="outline" className="mt-3 w-full font-semibold" disabled={!!loading} onClick={() => void signIn()} aria-describedby="demo-login-description">
+            {loading === 'demo' && <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />}
+            {loading === 'demo' ? 'Preparing your demo…' : 'Demo Login'}
+          </Button>
+          <p id="demo-login-description" className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+            Explore a personal demo account with sample orders and transactions. All activity is simulated; no money moves.
+          </p>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link href={searchParams.get('redirect') ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'} className="font-semibold text-primary hover:underline">

@@ -4,7 +4,9 @@ A prototype marketplace for new and pre-owned sports equipment, built with Next.
 
 Buyers can browse and filter gear, save addresses, run a simulated checkout and view demo invoices. Sellers submit photographed equipment for admin review. Admins manage listings, inventory, requests, orders and demo pickup plans. Payments, refunds, delivery and pickups are simulations; the app does not collect banking details or book couriers.
 
-The interface supports mobile two-column product grids, light/dark themes, glass surfaces and GSAP motion with reduced-motion support. KhelBot provides offline marketplace guidance. The price guide uses comparable asking-price listings and reports an indicative estimate.
+The interface supports mobile two-column product grids, light/dark themes, glass surfaces and GSAP motion with reduced-motion support. The desktop hero loads an interactive Three.js sports scene with procedural equipment models; mobile keeps its original hero. KhelBot provides offline marketplace guidance. The price guide uses comparable asking-price listings and reports an indicative estimate.
+
+Public catalog results use a bounded in-memory cache for quick page switching. Recent listings remain visible during background refreshes; checkout and admin inventory changes invalidate those snapshots. Private account data and orders are not stored in this cache, and checkout always validates current prices and stock on the server.
 
 ## Local setup
 
@@ -33,6 +35,10 @@ npm run dev
 ```
 
 Open **http://localhost:9002**. Register to create a buyer/seller account. If admin credentials were configured, sign in at `/admin/login`. There is no built-in password, and seeding does not reset existing passwords.
+
+The user sign-in page also offers **Demo Login**. It creates a private visitor account with a fictional address, four sample orders, and seller submissions. Repeating Demo Login while signed in reuses that visitor account. Each new visitor gets separate records; there is no shared demo password. All activity remains simulated. User credentials use `/login`; admin credentials use `/admin/login`.
+
+Run `npm run db:seed:demo` to populate admin screens with four named fictional users, 16 orders, 12 seller submissions, and four demo pickup plans. Orders include paid, failed, and refunded examples across several months. Admin totals, invoices, and user history read the same database records. The dashboard shows this month's activity; revenue analytics also shows all-time totals. Historical listings stay archived, and rerunning the seed preserves existing demo edits and inventory.
 
 For a local production build, run `npm run build` and `npm start -- --port 9002`.
 
@@ -70,6 +76,7 @@ Next.js, TypeScript, Tailwind, PostCSS and Playwright configuration files stay a
 | `npm run db:migrate` | Apply committed database migrations. |
 | `npm run db:seed` | Create only the configured admin account. |
 | `npm run db:seed:mocks` | Create or refresh the generated demo catalog. |
+| `npm run db:seed:demo` | Add four fictional users and linked prototype transaction history. |
 | `npm run db:remove-mocks` | Archive controlled demo listings without deleting history. |
 | `npm run test:unit` | Run domain, validation and generated-asset checks. |
 | `npm test` | Run Playwright against a disposable seeded database. |
@@ -91,6 +98,8 @@ npm test
 ```
 
 Playwright generates temporary credentials and uses a separate SQLite database; it does not use the local prototype database. The suite covers authentication and ownership, seller review/uploads, server-priced checkout, idempotency, inventory concurrency, cancellations, invoices, generated catalog assets, responsive layouts, themes and admin flows. CI also runs the production dependency audit. Local screenshots and failure traces are ignored under `artifacts/`, `test-results/` and `playwright-report/`.
+
+On Windows, run `npm test` from Git Bash. From PowerShell, use `& 'C:/Program Files/Git/bin/bash.exe' scripts/test.sh` if `bash` resolves to an unavailable WSL installation. The runner translates its temporary database path for native Windows Node.js.
 
 ## Hosting requirements
 

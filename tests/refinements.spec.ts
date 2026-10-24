@@ -87,9 +87,13 @@ test('desktop motion cleans up on navigation and disables for reduced motion', a
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await page.setViewportSize({ width: 1440, height: 1000 }); await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/'); await expect.poll(() => page.locator('h1').evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
-  const panel = page.locator('.hero-glass'); const box = await panel.boundingBox();
-  await page.mouse.move(box!.x + 20, box!.y + 20);
-  await expect.poll(() => panel.evaluate(el => getComputedStyle(el).transform)).not.toBe('none');
+  const panel = page.locator('[data-gear-showcase]');
+  await expect(panel).toHaveAttribute('data-renderer', 'webgl');
+  const canvas = panel.getByRole('img', { name: 'Interactive sports equipment', exact: true });
+  const rotation = await canvas.getAttribute('data-rotation');
+  await canvas.focus();
+  await page.keyboard.press('Space');
+  await expect.poll(() => canvas.getAttribute('data-rotation')).not.toBe(rotation);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.locator('[data-hero-background]')).not.toHaveAttribute('style', /transform/);
   await page.getByRole('navigation', { name: 'Main navigation', exact: true }).getByRole('link', { name: 'Pre-owned gear', exact: true }).click();

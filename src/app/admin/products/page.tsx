@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import type { Product } from '@/components/product-card';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 type ProductRow = Product & { isAvailable?: boolean };
@@ -52,6 +53,7 @@ export default function AdminProductsPage() {
       const response = await fetch(`/api/products/${selected.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isAvailable: false }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Could not archive product');
+      invalidateCatalogCache();
       setSelected(null); setRefresh(value => value + 1);
       toast({ title: 'Product archived', description: 'The listing is unavailable for purchase. You can publish it again from Edit.' });
     } catch (e) { toast({ title: e instanceof Error ? e.message : 'Could not archive product', variant: 'destructive' }); }

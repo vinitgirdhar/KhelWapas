@@ -46,6 +46,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 
 type OrderStatus = 'PaymentFailed' | 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 type PaymentStatus = 'failed' | 'paid' | 'pending' | 'refunded' | 'partially_paid';
@@ -216,6 +217,7 @@ export default function OrderDetailsPage() {
           title: 'Success',
           description: 'Order cancelled successfully',
         });
+        if (response.ok) invalidateCatalogCache();
         setCancelDialogOpen(false);
         fetchOrderDetails();
       } else {
@@ -252,6 +254,7 @@ export default function OrderDetailsPage() {
           title: 'Success',
           description: 'Order status updated successfully',
         });
+        if (response.ok && ['Cancelled', 'Returned'].includes(newStatus)) invalidateCatalogCache();
         setUpdateStatusDialogOpen(false);
         fetchOrderDetails();
       } else {

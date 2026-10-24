@@ -1,5 +1,6 @@
 'use client';
 import { getSessionValue, setSessionValue, removeSessionValue } from '@/lib/session-storage';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -43,6 +44,7 @@ export default function PaymentPage() {
       if (!response.ok) throw new Error(result.message || 'Could not place order');
       removeSessionValue('checkoutKey'); key.current = crypto.randomUUID();
       if (result.order.paymentStatus === 'failed') { setError('Demo payment declined. Your bag is unchanged and no money was charged. Choose success to try again.'); return; }
+      if (result.order.paymentStatus === 'paid') invalidateCatalogCache();
       removeAll(); removeSessionValue('selectedAddress'); removeSessionValue('checkoutPayload');
       toast({ title: 'Demo payment successful', description: 'Your prototype order is confirmed. No money was charged.' });
       router.replace(`/checkout/success?order=${encodeURIComponent(result.order.id)}`);

@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:mocks": "cross-env SEED_MOCK_PRODUCTS=true tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:remove-mocks": "tsx prisma/remove-mock-products.ts",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
@@ -51,6 +52,7 @@
     "sharp": "^0.35.5",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.186.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -59,6 +61,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "^0.186.0",
     "postcss": "^8.5.31",
     "prisma": "^6.14.0",
     "tailwindcss": "^3.4.1",

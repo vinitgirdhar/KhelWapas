@@ -32,6 +32,7 @@ import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 import { useRouter, useParams } from 'next/navigation';
 import type { Product } from '@/components/product-card';
 
@@ -320,6 +321,7 @@ export default function ProductFormPage() {
                 if (!createResponse.ok || !createData.success) {
                     throw new Error(createData?.message || 'Failed to create product');
                 }
+                invalidateCatalogCache();
                 
                 toast({
                     title: 'Success!',
@@ -391,6 +393,7 @@ export default function ProductFormPage() {
                     throw new Error(data?.message || `Request failed with status ${res.status}`)
                 }
 
+                invalidateCatalogCache();
                 // Update local UI from response to reflect immediate change
                 const updated = data.product as Product
                 setName(updated.name)

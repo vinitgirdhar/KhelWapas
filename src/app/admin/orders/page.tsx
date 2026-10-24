@@ -9,6 +9,7 @@ import {
   File,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -254,6 +255,7 @@ function OrdersTable({ orders }: { orders: Order[] }) {
             const data = await response.json();
 
             if (data.success) {
+                if (response.ok) invalidateCatalogCache();
                 toast({
                     title: 'Success',
                     description: 'Order cancelled successfully',

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 
 const statusConfig: Record<SellRequest['status'], { icon: React.ReactNode; color: string; }> = {
     Pending: { icon: <Clock className="h-4 w-4" />, color: "text-yellow-800 bg-yellow-100 border-yellow-200" },
@@ -67,6 +68,7 @@ export default function SellRequestDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Could not save review');
+      if (action === 'approve') invalidateCatalogCache();
       setRequest({ ...request, status: nextStatus, reviewReason: reason });
       toast({ title: action === 'approve' ? 'Listing approved and published' : 'Sell request rejected' });
     } catch (e) {

@@ -18,6 +18,7 @@ DropdownMenuSeparator,
 DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
+import { invalidateCatalogCache } from '@/lib/catalog-cache';
 import { type SellRequest } from '@/types/user';
 
 const statusConfig: Record<SellRequest['status'], { icon: React.ReactNode; color: string; badge: string; }> = {
@@ -84,6 +85,7 @@ export default function AdminDashboardPage() {
       });
 
       if (response.ok) {
+        if (status === 'Approved') invalidateCatalogCache();
         // Update local state
         setCurrentSellRequests(prev => 
           prev.map(req => 
@@ -154,7 +156,7 @@ export default function AdminDashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Revenue
+                  Revenue this month
                 </CardTitle>
                 <BarChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -170,7 +172,7 @@ export default function AdminDashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  New Users
+                  New users this month
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -185,7 +187,7 @@ export default function AdminDashboardPage() {
           <Link href="/admin/orders">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Orders</CardTitle>
+                <CardTitle className="text-sm font-medium">Orders this month</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
