@@ -44,3 +44,5 @@ Run one Node instance with persistent SQLite and upload storage. JSON totals are
 - Added five browser checks covering responsive grid/footer geometry, authentication gating, theme/device/storage behavior, dark mobile controls and motion cleanup. An independent read-only review also checked theme hydration, navigation and contrast.
 
 Refinement verification: 19 browser tests and five domain tests passed; typecheck, production build and whitespace checks passed. Updated production screenshots cover light/dark layouts at 390px and 1440px.
+
+The compact mobile revision reduces repeated promotional content: shorter hero with paired actions, one row of benefits, featured products, and paired footer groups. Desktop retains the additional promo/process content. Dark surfaces and glass are neutral charcoal with orange accents. Targeted layout/theme/motion checks and the production build passed after this revision; regression checks enforce a landing height under 2400px at 390px and neutral dark background RGB channels.

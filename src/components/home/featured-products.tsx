@@ -65,17 +65,17 @@ export default function FeaturedProducts() {
   
 
   return (
-    <section className="py-20 bg-muted/20" suppressHydrationWarning>
+    <section className="py-8 md:py-20 bg-muted/20" suppressHydrationWarning>
       <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tight">
+        <div className="text-center mb-5 md:mb-12">
+          <h2 className="font-headline text-2xl md:text-4xl font-bold tracking-tight">
             Featured Gear
           </h2>
-          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
+          <p className="text-sm md:text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
             Top picks from our collection, ready for their next game.
           </p>
         </div>
-        <div className="flex justify-center flex-wrap gap-2 mb-8" suppressHydrationWarning>
+        <div className="flex justify-start gap-2 mb-5 overflow-x-auto pb-2 sm:flex-wrap sm:justify-center md:mb-8" suppressHydrationWarning>
           {categories.map((category) => (
             <Button
               key={category.name}
@@ -85,7 +85,7 @@ export default function FeaturedProducts() {
                   setActiveCategory(category.name);
                 }
               }}
-              className="gap-2"
+              className="shrink-0 gap-2 rounded-full"
               suppressHydrationWarning
             >
               {category.icon}
@@ -108,7 +108,7 @@ export default function FeaturedProducts() {
                 <ProductCard key={product.id} product={product} />
               ))}
         </div>
-        <div className="mt-8 text-center"><Button asChild variant="outline" className="rounded-full"><Link href="/shop/preowned">Explore pre-owned gear <ArrowUpRight /></Link></Button></div>
+        <div className="mt-6 md:mt-8 text-center"><Button asChild variant="outline" className="rounded-full"><Link href="/shop/preowned">Explore pre-owned gear <ArrowUpRight /></Link></Button></div>
       </div>
     </section>
   );

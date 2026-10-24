@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 export default function SeasonalBanner() {
   return (
-    <section className="bg-[hsl(var(--brand-navy))] text-white">
+    <section className="hidden md:block bg-[hsl(var(--brand-navy))] text-white">
       <div className="container py-12 px-6 text-center">
         <div 
           className="bg-[#14245e]/80 bg-blend-overlay bg-cover bg-center rounded-lg p-8 md:p-12"

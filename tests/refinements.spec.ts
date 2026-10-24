@@ -13,6 +13,7 @@ test('mobile landing has a two-by-two product grid, paired footer groups and no 
   expect(boxes[2].y).toBeCloseTo(boxes[3].y, 0);
   expect(boxes[1].x).toBeGreaterThan(boxes[0].x);
   expect(boxes[2].y).toBeGreaterThan(boxes[0].y);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThan(2400);
   const left = await page.locator('footer nav[aria-label="Explore"]').boundingBox();
   const right = await page.locator('footer nav[aria-label="Your account"]').boundingBox();
   expect(left!.y).toBeCloseTo(right!.y, 0);
@@ -52,6 +53,8 @@ test('dark mode follows system preference, toggles, persists and works across ro
   await expect(page.getByRole('button', { name: 'Turn on light mode' })).toBeVisible();
   const color = await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor);
   expect(color).not.toBe('rgb(255, 255, 255)');
+  const channels = color.match(/[\d.]+/g)!.slice(0,3).map(Number);
+  expect(Math.max(...channels) - Math.min(...channels)).toBeLessThanOrEqual(2);
   await page.getByRole('button', { name: 'Turn on light mode' }).click();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   await page.reload(); await expect(page.locator('html')).not.toHaveClass(/dark/);
