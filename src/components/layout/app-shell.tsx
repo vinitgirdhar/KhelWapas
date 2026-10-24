@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
-import KhelbotWidget from '@/components/khelbot/khelbot-widget';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,7 +18,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isInvoiceRoute = pathname.startsWith('/invoice');
 
   return (
-    <PageMotion><div className={cn("relative flex min-h-dvh flex-col", showMobileNav && "has-mobile-dock pb-24 md:pb-0")}>
+    <PageMotion><div className={cn("relative flex min-h-dvh flex-col", showMobileNav && "has-mobile-dock pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0")}>
       <a href="#main-content" className="skip-link">Skip to content</a>
       {isInvoiceRoute && (
         <Head>
@@ -37,7 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       {isAdminRoute || isInvoiceRoute ? null : <Footer />}
       <Toaster />
-      {!isAdminRoute && !isInvoiceRoute && <>{!pathname.startsWith('/checkout') && pathname !== '/cart' && <KhelbotWidget />}{showMobileNav && <MobileNav />}</>}
+      {!isAdminRoute && !isInvoiceRoute && showMobileNav && <MobileNav />}
     </div></PageMotion>
   );
 }

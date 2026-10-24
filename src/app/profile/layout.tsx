@@ -64,9 +64,9 @@ export default function ProfileLayout({
       </header>
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
         <aside className="lg:w-1/5">
-          <nav className="flex overflow-x-auto gap-1 lg:flex-col lg:space-y-1">
+          <nav aria-label="Account sections" className="flex overflow-x-auto gap-1 pb-2 lg:flex-col lg:space-y-1">
             {sidebarNavItems.map((item) => (
-              <Link key={item.href} href={item.href} className="shrink-0">
+              <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} className="shrink-0">
                 <span
                   className={cn(
                     'inline-flex w-full items-center justify-start gap-2 rounded-xl px-4 py-3 text-sm font-medium',
@@ -80,10 +80,10 @@ export default function ProfileLayout({
                 </span>
               </Link>
             ))}
-             <Separator className="my-2"/>
+             <Separator className="my-2 hidden lg:block"/>
              <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 text-destructive"
+                className="shrink-0 justify-start gap-2 text-destructive lg:w-full"
                 onClick={handleLogout}
              >
                 <LogOut className="h-4 w-4"/>
@@ -91,7 +91,7 @@ export default function ProfileLayout({
             </Button>
           </nav>
         </aside>
-        <main className="flex-1">{children}</main>
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
     </div>
   );

@@ -138,10 +138,6 @@
   .skip-link:focus { transform: translateY(0); }
 }
 @media (min-width: 768px) { .mobile-dock { display: none; } }
-@media (max-width: 767px) {
-  .has-mobile-dock .fixed.bottom-6 { bottom: 6.5rem; }
-  .has-mobile-dock .fixed.bottom-24 { bottom: 10rem; }
-}
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

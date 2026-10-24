@@ -6,7 +6,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { ArrowRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -105,14 +104,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             <h3 className="font-headline text-sm sm:text-base font-semibold leading-snug text-card-foreground flex-grow break-words">{product.name}</h3>
 
             <div className="flex flex-wrap gap-2 justify-between items-center mt-3 sm:mt-4">
-              <p className="text-lg sm:text-2xl font-bold font-headline text-primary">₹{product.price.toLocaleString('en-IN')}</p>
+              <p className="min-w-0 break-words text-base sm:text-2xl font-bold font-headline tabular-nums text-primary">₹{product.price.toLocaleString('en-IN')}</p>
               {/* This is a visual-only element to avoid nested interactive elements */}
               <div className={cn(
                   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors',
                   'h-9 px-2 sm:px-3', // Corresponds to size="sm"
                   'border border-input bg-background group-hover:bg-primary group-hover:text-primary-foreground' // Corresponds to variant="outline" with hover effects
               )}>
-                <span className="hidden sm:inline">View Details</span><span className="sm:hidden">Details</span>
+                <span className="hidden sm:inline">View Details</span><span className="sr-only sm:hidden">View details</span>
                 <ArrowRight className="h-4 w-4 sm:ml-2 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Goal, DiscAlbum } from 'lucide-react';
 import ProductCard, { type Product } from '@/components/product-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   CricketBatIcon,
 } from '@/components/icons/cricket-bat';
-import { Goal, DiscAlbum, Dumbbell, PersonStanding, Bike, Wind } from 'lucide-react';
 import { ShuttlecockIcon } from '../icons/shuttlecock';
-// Products will be fetched from API
 
 const categories = [
   { name: 'All', icon: null },
@@ -22,50 +20,40 @@ const categories = [
 ];
 
 export default function FeaturedProducts() {
-  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-
-  // Ensure component is mounted (client-side only)
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [retry, setRetry] = useState(0);
 
   // Fetch products from API
   useEffect(() => {
-    if (!mounted) return;
-    
+    const controller = new AbortController();
     const fetchProducts = async () => {
       setLoading(true);
+      setError('');
       try {
-        const response = await fetch('/api/products?available=true&limit=100');
+        const params = new URLSearchParams({ available: 'true', limit: '4' });
+        if (activeCategory !== 'All') params.set('category', activeCategory);
+        const response = await fetch(`/api/products?${params}`, { signal: controller.signal });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Could not load gear');
         if (data.success) {
-          setAllProducts(data.products);
+          setFilteredProducts(data.products);
         }
-      } catch (error) {
-        setError('Could not load featured gear. Please refresh to try again.');
+      } catch {
+        if (!controller.signal.aborted) setError('Could not load featured gear. Please try again.');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [mounted]);
-
-  useEffect(() => {
-    if (!mounted) return;
-    
-    setFilteredProducts(activeCategory === 'All' ? allProducts.slice(0, 4) : allProducts.filter(p => p.category === activeCategory).slice(0,4));
-  }, [activeCategory, allProducts, mounted]);
-  
+    return () => controller.abort();
+  }, [activeCategory, retry]);
 
   return (
-    <section className="py-8 md:py-20 bg-muted/20" suppressHydrationWarning>
+    <section className="py-8 md:py-20 bg-muted/20" aria-label="Featured gear">
       <div className="container">
         <div className="text-center mb-5 md:mb-12">
           <h2 className="font-headline text-2xl md:text-4xl font-bold tracking-tight">
@@ -75,36 +63,36 @@ export default function FeaturedProducts() {
             Top picks from our collection, ready for their next game.
           </p>
         </div>
-        <div className="flex justify-start gap-2 mb-5 overflow-x-auto pb-2 sm:flex-wrap sm:justify-center md:mb-8" suppressHydrationWarning>
+        <div className="flex justify-start gap-2 mb-5 overflow-x-auto pb-2 sm:flex-wrap sm:justify-center md:mb-8" role="group" aria-label="Featured sport">
           {categories.map((category) => (
             <Button
               key={category.name}
               variant={activeCategory === category.name ? 'default' : 'outline'}
+              aria-pressed={activeCategory === category.name}
               onClick={() => {
                 if(activeCategory !== category.name) {
                   setActiveCategory(category.name);
                 }
               }}
               className="shrink-0 gap-2 rounded-full"
-              suppressHydrationWarning
             >
               {category.icon}
               <span>{category.name}</span>
             </Button>
           ))}
         </div>
-        {error && <p role="alert" className="mb-6 text-center text-destructive">{error}</p>}
+        {error && <div role="alert" className="mb-6 text-center"><p className="text-destructive">{error}</p><Button variant="outline" className="mt-3" onClick={() => setRetry(value => value + 1)}>Try again</Button></div>}
         {!loading && !error && !filteredProducts.length && <p className="py-10 text-center text-muted-foreground">Fresh gear is on its way. Try another sport or list your own.</p>}
-        <div className="product-grid grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          {!mounted || loading
+        <div className="product-grid grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4" aria-busy={loading}>
+          {loading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex flex-col gap-4">
-                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="aspect-square w-full" />
                   <Skeleton className="h-6 w-3/4" />
                   <Skeleton className="h-6 w-1/4" />
                 </div>
               ))
-            : filteredProducts.map((product) => (
+            : !error && filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
         </div>

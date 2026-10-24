@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
       if (response.ok) {
         toast({
           title: 'Admin Login Successful!',
-          description: `Welcome back, ${result.user.name}!`,
+          description: `Welcome back, ${result.user.fullName || result.user.name || 'Admin'}!`,
         });
         
         // Redirect to admin dashboard
@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: result.error || 'Invalid credentials.',
+          description: result.message || result.error || 'Invalid credentials.',
         });
       }
     } catch (error) {
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="bg-muted/40 min-h-screen flex items-center justify-center">
+    <div className="bg-muted/40 min-h-dvh flex items-center justify-center py-8">
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit mb-4">
@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="admin@khelwapas.com" {...field} />
+                      <Input type="email" autoComplete="username" placeholder="admin@khelwapas.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -117,7 +117,7 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

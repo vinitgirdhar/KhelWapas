@@ -1,217 +1,103 @@
-
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { MessageSquare, Mic, Send, X, Loader2 } from 'lucide-react';
-import { KhelwapasLogo } from '../icons/khelwapas-logo';
-import { cn } from '@/lib/utils';
+import { useEffect, useRef, useState } from 'react';
+import { Loader2, Send } from 'lucide-react';
 import { chatWithKhelbot } from '@/ai/flows/khelbot-chat';
-import { ScrollArea } from '../ui/scroll-area';
-import type * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
+type Message = { role: 'user' | 'model'; content: string };
+const prompts = [
+  ['Selling gear', 'Help me with selling'],
+  ['Track an order', 'How do I track my order?'],
+  ['Demo payments', 'Questions about payment'],
+  ['Condition grades', 'Explain condition grades'],
+] as const;
 
-type Message = {
-    role: 'user' | 'model';
-    content: string;
-};
+export default function KhelbotWidget({ open, onOpenChange, onCloseFocus }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCloseFocus: () => void;
+}) {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'model', content: "Hi! I'm KhelBot. Ask me about buying, selling, condition grades, or demo orders." },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const sending = useRef(false);
+  const log = useRef<HTMLDivElement>(null);
+  const [viewport, setViewport] = useState<{ top: number; height: number }>();
+  const compact = !!viewport && viewport.height < 420;
 
-type HistoryItem = {
-    role: 'user' | 'model';
-    content: { text: string }[];
-}
-
-export default function KhelbotWidget() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [input, setInput] = useState('');
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [loading, setLoading] = useState(false);
-    const viewportRef = useRef<React.ElementRef<typeof ScrollAreaPrimitive.Viewport>>(null);
-    const { toast } = useToast();
-
-    useEffect(() => {
-        if(isOpen && messages.length === 0) {
-            setMessages([{ role: 'model', content: "Hi! I'm KhelBot. How can I help you today? You can ask me about selling, buying, or tracking your order." }]);
-        }
-    }, [isOpen, messages.length]);
-
-     useEffect(() => {
-        // Auto-scroll to the bottom when new messages are added
-        if (viewportRef.current) {
-            viewportRef.current.scrollTo({
-                top: viewportRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }, [messages]);
-
-    const handleSend = async (messageText?: string) => {
-        const textToSend = messageText || input;
-        if (!textToSend.trim()) return;
-        
-        const userMessage: Message = { role: 'user', content: textToSend };
-        setMessages(prev => [...prev, userMessage]);
-        setInput('');
-        setLoading(true);
-
-        try {
-            // We need to format the history for the Genkit flow
-            const historyForApi: HistoryItem[] = [...messages, userMessage].map(msg => ({
-                role: msg.role,
-                content: [{ text: msg.content }]
-            }));
-
-            const response = await chatWithKhelbot({
-                message: textToSend,
-                history: historyForApi.slice(0, -1) // Pass history without the current message
-            });
-            const modelMessage: Message = { role: 'model', content: response };
-            setMessages(prev => [...prev, modelMessage]);
-        } catch (error) {
-            console.error("KhelBot Error:", error);
-            const errorMessage: Message = { role: 'model', content: "Sorry, I'm having a little trouble right now. Please try again later." };
-            setMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setLoading(false);
-        }
+  useEffect(() => {
+    if (!open) return;
+    const visible = window.visualViewport;
+    const update = () => setViewport({ top: visible?.offsetTop ?? 0, height: visible?.height ?? window.innerHeight });
+    update();
+    visible?.addEventListener('resize', update);
+    visible?.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      visible?.removeEventListener('resize', update);
+      visible?.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
     };
-    
-    const handleMicClick = () => {
-        toast({
-            title: "Voice Input Coming Soon!",
-            description: "We're working on adding voice capabilities to KhelBot.",
-        });
-    };
+  }, [open]);
 
-    return (
-        <TooltipProvider>
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-                {isOpen && (
-                    <div
-                        className={cn(
-                            "w-[min(380px,calc(100vw-2rem))] h-[min(600px,65dvh)] transition-all duration-300 origin-bottom-right mb-4 scale-100 opacity-100"
-                        )}
-                    >
-                        <div className="glass-container w-full h-full rounded-lg">
-                            <div className="glass-filter"></div>
-                            <div className="glass-overlay"></div>
-                            <div className="glass-specular"></div>
-                            <div className="glass-content h-full">
-                               <Card className="w-full h-full bg-transparent border-0 shadow-none flex flex-col p-0">
-                                    <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-white/20 bg-black/50">
-                                        <div className="flex items-center gap-3">
-                                            <KhelwapasLogo className="w-10 h-10" />
-                                            <div>
-                                                <h3 className="font-headline font-semibold text-white">KhelBot</h3>
-                                                <p className="text-xs text-white/80">AI Support</p>
-                                            </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-white hover:bg-white/20 hover:text-white">
-                                            <X className="h-5 w-5" />
-                                        </Button>
-                                    </CardHeader>
-                                    <CardContent className="p-0 flex-1 flex flex-col min-h-0">
-                                        <ScrollArea className="flex-1 p-4" viewportRef={viewportRef}>
-                                            <div className="space-y-4">
-                                                {messages.map((message, index) => (
-                                                    <div key={index} className={cn(
-                                                        "flex gap-3 items-end",
-                                                        message.role === 'user' ? "justify-end" : "justify-start"
-                                                    )}>
-                                                        {message.role === 'model' && (
-                                                            <Avatar className="w-8 h-8 flex-shrink-0">
-                                                                <AvatarFallback className="bg-primary text-primary-foreground">K</AvatarFallback>
-                                                            </Avatar>
-                                                        )}
-                                                        <div className={cn(
-                                                            "rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap shadow",
-                                                            message.role === 'user'
-                                                                ? "bg-primary text-primary-foreground"
-                                                                : "bg-background text-foreground"
-                                                        )}>
-                                                            {message.content}
-                                                        </div>
-                                                        {message.role === 'user' && (
-                                                            <Avatar className="w-8 h-8 flex-shrink-0">
-                                                                <AvatarFallback className="bg-secondary text-secondary-foreground">U</AvatarFallback>
-                                                            </Avatar>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                {loading && (
-                                                    <div className="flex gap-3 items-end justify-start">
-                                                        <Avatar className="w-8 h-8">
-                                                            <AvatarFallback className="bg-primary text-primary-foreground">K</AvatarFallback>
-                                                        </Avatar>
-                                                        <div className="rounded-lg px-4 py-2 bg-background">
-                                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground"/>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </ScrollArea>
-                                        <div className="p-4 border-t border-white/20">
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
-                                                <Button variant="secondary" size="sm" className="text-xs" onClick={() => handleSend("Help me with selling")}>Sell Help</Button>
-                                                <Button variant="secondary" size="sm" className="text-xs" onClick={() => handleSend("How do I track my order?")}>Track Order</Button>
-                                                <Button variant="secondary" size="sm" className="text-xs" onClick={() => handleSend("Questions about payment")}>Payments</Button>
-                                                <Button variant="secondary" size="sm" className="text-xs" onClick={() => handleSend("I need to report an issue")}>Report Issue</Button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Button variant="secondary" size="icon" onClick={handleMicClick}>
-                                                    <Mic className="h-5 w-5" />
-                                                </Button>
-                                                <Input
-                                                    value={input}
-                                                    onChange={(e) => setInput(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                                    placeholder="Ask a question..."
-                                                    disabled={loading}
-                                                    className="bg-background border-border/50 text-foreground placeholder:text-muted-foreground"
-                                                />
-                                                <Button onClick={() => handleSend()} disabled={loading || !input.trim()}>
-                                                    <Send className="h-5 w-5" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    </div>
-                )}
+  useEffect(() => {
+    if (open && log.current) log.current.scrollTop = log.current.scrollHeight;
+  }, [open, messages, loading]);
 
-                 <div className={cn("transition-opacity duration-300", isOpen ? "opacity-0 pointer-events-none" : "opacity-100")}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                size="icon"
-                                className="rounded-full w-16 h-16 shadow-lg bg-primary hover:bg-primary/90"
-                                onClick={() => setIsOpen(true)}
-                                aria-label="Open KhelBot"
-                                suppressHydrationWarning
-                            >
-                                <MessageSquare className="h-8 w-8" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left">
-                            <p>Need help? Ask KhelBot!</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
-            </div>
-        </TooltipProvider>
-    );
+  const send = async (value: string) => {
+    const text = value.trim();
+    if (sending.current || !text || text.length > 2000) return;
+    sending.current = true;
+    setLoading(true);
+    setMessages(previous => [...previous, { role: 'user', content: text }]);
+    setInput('');
+    try {
+      const reply = await chatWithKhelbot({ message: text });
+      setMessages(previous => [...previous, { role: 'model', content: reply }]);
+    } catch {
+      setMessages(previous => [...previous, { role: 'model', content: 'Help is temporarily unavailable. Please try again or open the marketplace guide from the footer.' }]);
+    } finally {
+      sending.current = false;
+      setLoading(false);
+    }
+  };
 
-    
+  return <Sheet open={open} onOpenChange={onOpenChange}>
+    <SheetContent
+      side="right"
+      className="liquid-glass flex h-dvh w-full flex-col gap-0 p-0 sm:max-w-md"
+      style={viewport ? { top: viewport.top, height: viewport.height, bottom: 'auto' } : undefined}
+      onOpenAutoFocus={event => { event.preventDefault(); log.current?.focus(); }}
+      onCloseAutoFocus={event => { event.preventDefault(); onCloseFocus(); }}
+    >
+      <div className={cn('shrink-0 border-b', compact ? 'p-3' : 'p-5', 'pr-14')}>
+        <SheetTitle className="font-headline text-xl">KhelBot</SheetTitle>
+        <SheetDescription className={cn('mt-1', compact && 'sr-only')}>Marketplace help for buying, selling and demo orders.</SheetDescription>
+      </div>
+      <div ref={log} role="log" aria-label="Conversation with KhelBot" aria-live="polite" aria-relevant="additions text" aria-busy={loading} tabIndex={0} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-5 focus-visible:outline-offset-[-4px]">
+        {messages.map((message, index) => <div key={index} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+          <div className={cn('max-w-[90%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm leading-relaxed', message.role === 'user' ? 'bg-primary text-primary-foreground' : 'border bg-card text-card-foreground')}>
+            <span className="sr-only">{message.role === 'user' ? 'You: ' : 'KhelBot: '}</span>{message.content}
+          </div>
+        </div>)}
+        {loading && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Finding an answer…</p>}
+      </div>
+      <div className="shrink-0 border-t bg-background/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {!compact && <div className="mb-3 grid grid-cols-2 gap-2">
+          {prompts.map(([label, value]) => <Button key={label} variant="secondary" size="sm" className="min-h-10 min-w-0 px-2 text-xs" disabled={loading} onClick={() => void send(value)}>{label}</Button>)}
+        </div>}
+        <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); void send(input); }}>
+          <label className="sr-only" htmlFor="khelbot-message">Your question</label>
+          <Input id="khelbot-message" value={input} maxLength={2000} onChange={event => setInput(event.target.value)} placeholder="Ask a question…" autoComplete="off" className="h-11 min-w-0 text-base" />
+          <Button type="submit" size="icon" className="h-11 w-11 shrink-0" disabled={loading || !input.trim()} aria-label="Send question"><Send className="h-4 w-4" /></Button>
+        </form>
+      </div>
+    </SheetContent>
+  </Sheet>;
 }

@@ -52,14 +52,16 @@ export async function createDemoOrder(userId: string, input: z.infer<typeof chec
 export const transitions: Record<string, readonly string[]> = {
   Pending: ['Confirmed', 'Cancelled'], Confirmed: ['Shipped', 'Cancelled'], Shipped: ['Delivered'], Delivered: ['Returned'], PaymentFailed: [], Cancelled: [], Returned: [],
 };
-export async function changeOrderStatus(id: string, status: string) {
+export async function changeOrderStatus(id: string, status: string, cancellationReason?: string) {
   return prisma.$transaction(async tx => {
     const order = await tx.order.findUnique({ where: { id } });
     if (!order) throw new ApiError(404, 'Order not found');
     if (order.fulfillmentStatus === status) return order;
     if (!transitions[order.fulfillmentStatus]?.includes(status)) throw new ApiError(409, `Cannot move ${order.fulfillmentStatus} to ${status}`);
     const restore = ['Cancelled','Returned'].includes(status) && order.paymentStatus === 'paid';
-    const result = await tx.order.updateMany({ where: { id, fulfillmentStatus: order.fulfillmentStatus }, data: { fulfillmentStatus: status, ...(restore ? { paymentStatus: 'refunded' as const } : {}) } });
+    const reason = status === 'Cancelled' ? cancellationReason?.trim() : undefined;
+    const adminNotes = reason ? [order.adminNotes, `Cancellation reason: ${reason}`].filter(Boolean).join('\n\n') : undefined;
+    const result = await tx.order.updateMany({ where: { id, fulfillmentStatus: order.fulfillmentStatus }, data: { fulfillmentStatus: status, ...(restore ? { paymentStatus: 'refunded' as const } : {}), ...(adminNotes ? { adminNotes } : {}) } });
     if (!result.count) throw new ApiError(409, 'Order changed. Please refresh');
     if (restore) for (const raw of order.items as Prisma.JsonArray) {
       const item = raw as { productId: string; quantity: number };

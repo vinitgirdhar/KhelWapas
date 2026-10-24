@@ -1,5 +1,6 @@
 import { test, expect, request as requestFactory, type APIRequestContext } from '@playwright/test';
 import { randomUUID } from 'crypto';
+import { adminContext } from './helpers/admin';
 import sharp from 'sharp';
 const origin = 'http://localhost:9003';
 const addressData = { title: 'Home', fullName: 'Prototype Player', phone: '9876543210', street: '123 Demo Street', city: 'Mumbai', state: 'Maharashtra', postalCode: '400001', country: 'India', isDefault: true };
@@ -11,9 +12,7 @@ async function account() {
   return { api, email, password, user: (await response.json()).user };
 }
 async function admin() {
-  const api = await requestFactory.newContext({ baseURL: origin });
-  const response = await api.post('/api/admin/login', { data: { email: process.env.DEMO_ADMIN_EMAIL, password: process.env.DEMO_ADMIN_PASSWORD } });
-  expect(response.status()).toBe(200); return api;
+  return adminContext();
 }
 async function product(api: APIRequestContext, stock = 2) {
   const response = await api.post('/api/products/create', { data: { name: 'Test practice equipment', category: 'Cricket', type: 'preowned', price: 1200, description: 'A fully described piece of sports equipment for a prototype checkout.', imageUrls: ['/images/products/background.jpg'], grade: 'B', stock } });
@@ -60,8 +59,15 @@ test('server pricing, quote, idempotency, inventory and cancellation are consist
   await expect((await manager.get(`/api/products/${p.id}`)).json()).resolves.toMatchObject({ product: { stock: 1 } });
   const outsider = await account(); expect((await outsider.api.get(`/api/orders/${order.id}`)).status()).toBe(404);
   expect((await manager.patch(`/api/admin/orders/${order.id}/status`, { data: { status: 'Delivered' } })).status()).toBe(409);
-  expect((await manager.post(`/api/admin/orders/${order.id}/cancel`, { data: {} })).status()).toBe(200);
-  await manager.post(`/api/admin/orders/${order.id}/cancel`, { data: {} });
+  expect((await manager.post(`/api/admin/orders/${order.id}/notes`, { data: { adminNotes: 'Buyer requested a change.' } })).status()).toBe(200);
+  expect((await manager.post(`/api/admin/orders/${order.id}/cancel`, { data: { reason: 'x'.repeat(1001) } })).status()).toBe(400);
+  const cancelled = await manager.post(`/api/admin/orders/${order.id}/cancel`, { data: { reason: '  Buyer no longer needs this gear.  ' } });
+  expect(cancelled.status()).toBe(200);
+  const expectedNote = 'Buyer requested a change.\n\nCancellation reason: Buyer no longer needs this gear.';
+  expect((await cancelled.json()).order.adminNotes).toBe(expectedNote);
+  const cancelledAgain = await manager.post(`/api/admin/orders/${order.id}/cancel`, { data: { reason: 'Do not append this duplicate.' } });
+  expect((await cancelledAgain.json()).order.adminNotes).toBe(expectedNote);
+  await expect((await manager.get(`/api/admin/orders/${order.id}`)).json()).resolves.toMatchObject({ order: { adminNotes: expectedNote, timeline: expect.arrayContaining([expect.objectContaining({ status: 'Cancelled' })]) } });
   await expect((await manager.get(`/api/products/${p.id}`)).json()).resolves.toMatchObject({ product: { stock: 2 } });
   const invoice = await buyer.api.get(`/api/orders/${order.id}`); expect((await invoice.json()).order).toMatchObject({ amount: 1250, paymentStatus: 'refunded', shippingAddress: { street: addressData.street } });
 });
@@ -207,4 +213,88 @@ test('GSAP finishes visible animations and narrow two-column catalogs fit the vi
   await expect.poll(() => featured.locator('xpath=ancestor::section').evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
   await page.goto('/shop/preowned'); await expect(page.locator('a[href="/products/demo-cricket"]')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('revenue uses saved product types and matching order references, then excludes refunds', async () => {
+  const manager = await admin(), buyer = await account(), p = await product(manager), a = await address(buyer.api);
+  const before = (await (await manager.get('/api/admin/revenue')).json()).data;
+  const placed = await checkout(buyer.api, p.id, a.id);
+  expect(placed.status()).toBe(201);
+  const order = (await placed.json()).order;
+  const current = (await (await manager.get('/api/admin/revenue')).json()).data;
+  const preowned = (data: typeof current) => data.salesTypeData.find((row: { name: string }) => row.name === 'Pre-Owned')?.value || 0;
+  expect(preowned(current)).toBe(preowned(before) + 1);
+  expect(current.summary.itemsSold).toBe(before.summary.itemsSold + 1);
+  expect(current.summary.totalSales).toBe(before.summary.totalSales + 1);
+  const sale = current.recentSales.find((row: { id: string }) => row.id === `ORD-${order.id.slice(0,8).toUpperCase()}`);
+  expect(sale).toMatchObject({ type: 'Pre-Owned', amount: 1250 });
+  expect((await manager.get(`/api/admin/orders/${sale.id}`)).status()).toBe(200);
+  await manager.post(`/api/admin/orders/${order.id}/cancel`, { data: {} });
+  const refunded = (await (await manager.get('/api/admin/revenue')).json()).data;
+  expect(refunded.summary).toEqual(before.summary);
+});
+
+test('cookie authentication survives blocked local storage and logout still succeeds', async ({ page }) => {
+  const user = await account();
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    for (const method of ['getItem','setItem','removeItem'] as const) {
+      const original = Storage.prototype[method];
+      Object.defineProperty(Storage.prototype, method, { value: function (...args: string[]) {
+        if (this === window.localStorage) throw new DOMException('Storage blocked', 'SecurityError');
+        return Reflect.apply(original, this, args);
+      } });
+    }
+  });
+  await page.goto('/login');
+  await page.getByLabel('Email Address').fill(user.email);
+  await page.getByLabel('Password', { exact: true }).fill(user.password);
+  await page.getByRole('button', { name: 'Log In', exact: true }).click();
+  await expect(page).toHaveURL(origin + '/');
+  await expect(page.getByRole('button', { name: 'Your account', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Your account', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Log out', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  expect((await page.request.get('/api/auth/me')).status()).toBe(401);
+  expect(errors).toEqual([]);
+});
+
+test('guest buying intent survives login to registration and malformed return links remain safe', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/login?redirect=%25');
+  await expect(page.getByRole('link', { name: 'Cancel and go back' })).toHaveAttribute('href', '/');
+  await page.goto('/products/demo-cricket');
+  await page.getByRole('button', { name: 'Add to Cart', exact: true }).click();
+  await expect(page).toHaveURL(/\/login\?redirect=/);
+  await page.getByRole('link', { name: 'Register here' }).click();
+  await expect(page).toHaveURL(/\/register\?redirect=/);
+  await page.getByLabel('Full Name', { exact: true }).fill('New Gear Player');
+  await page.getByLabel('Email Address', { exact: true }).fill(`new-${randomUUID()}@example.test`);
+  await page.getByLabel('Password', { exact: true }).fill('New player prototype 2026!');
+  await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+  await expect(page).toHaveURL(origin + '/cart');
+  await expect(page.getByText('Cricket practice bat', { exact: true })).toBeVisible();
+  expect((await page.request.get('/api/auth/me')).status()).toBe(200);
+  expect(errors).toEqual([]);
+});
+
+test('checkout works with browser storage blocked and displays the current quoted address', async ({ page }) => {
+  const manager = await admin(), buyer = await account(), p = await product(manager), saved = await address(buyer.api);
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.context().addCookies((await buyer.api.storageState()).cookies);
+  await page.addInitScript(() => {
+    for (const method of ['getItem','setItem','removeItem'] as const) Object.defineProperty(Storage.prototype, method, {
+      value: () => { throw new DOMException('Storage blocked', 'SecurityError'); },
+    });
+  });
+  await page.goto(`/products/${p.id}`);
+  await expect(page.getByRole('button', { name: 'Your account', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Buy Now', exact: true }).click();
+  await expect(page.getByRole('radio', { name: /Prototype Player/ })).toBeVisible();
+  expect((await buyer.api.put(`/api/profile/addresses/${saved.id}`, { data: { street: '456 Updated Demo Street' } })).status()).toBe(200);
+  await page.getByRole('button', { name: 'Continue to Payment' }).click();
+  await expect(page.getByText('456 Updated Demo Street, Mumbai, Maharashtra 400001', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Run demo payment' }).click();
+  await expect(page).toHaveURL(/checkout\/success\?order=/);
+  expect(errors).toEqual([]);
 });

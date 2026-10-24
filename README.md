@@ -1,6 +1,6 @@
 # KhelWapas
 
-A prototype marketplace for new and pre-owned sports equipment. The original navy/orange palette and logo are preserved, with glass navigation, Apple system fonts, responsive shopping pages, signed-in mobile navigation, and GSAP animation that respects reduced motion. Mobile products use two columns, with four featured items on the home page and paired footer navigation groups. The compact mobile landing uses a shorter hero and a single benefits row; additional promo and process sections appear on desktop. Dark mode uses charcoal glass with the original orange accent. A header toggle switches between light and dark themes; the initial theme follows the device and an explicit choice persists across visits and tabs.
+A prototype marketplace for new and pre-owned sports equipment. The original navy/orange palette and logo are preserved, with glass navigation, Apple system fonts, responsive shopping pages, signed-in mobile navigation, and GSAP animation that respects reduced motion. Mobile products use two columns, with four featured items on the home page and paired footer navigation groups. The compact mobile landing uses a shorter hero and a single benefits row; additional promo and process sections appear on desktop. Dark mode uses charcoal glass with the original orange accent. A header toggle switches between light and dark themes; the initial theme follows the device and an explicit choice persists across visits and tabs. KhelBot opens on demand from the desktop header or mobile menu, with no floating launcher covering content. Its accessible panel follows the visible viewport and compacts when the keyboard leaves little room.
 
 ## Run locally
 
@@ -40,7 +40,7 @@ npx playwright install --with-deps chromium
 npm test
 ```
 
-Tests create and remove an isolated SQLite database and generate disposable admin credentials. They never use the local prototype database. The suite covers ownership, session invalidation, pricing tampering, quotes, idempotency, last-item concurrency, cancellation restocking, seller approval, image spoofing, demo failure/success, invoices, and mobile cart layout. Screenshots are saved in ignored `artifacts/` and failures in `test-results/`.
+Tests create and remove an isolated SQLite database and generate disposable admin credentials. They never use the local prototype database. The suite covers ownership, session invalidation, pricing tampering, quotes, idempotency, last-item concurrency, cancellation reasons/restocking, seller approval, image spoofing, demo failure/success, invoices, responsive layouts, help focus/viewport bounds, upload controls, blocked browser storage, purchase continuation, persisted-cart validation, and admin pagination/filters. Tests reuse the manager session so unrelated cases do not exhaust production login limits. Screenshots are saved in ignored `artifacts/` and failures in `test-results/`.
 
 ## Hosting and launch boundaries
 

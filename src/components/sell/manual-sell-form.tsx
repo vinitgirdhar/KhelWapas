@@ -30,25 +30,25 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, UploadCloud, X, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const manualSellSchema = z.object({
-  fullName: z.string().min(2, 'Full name is required.'),
-  email: z.string().email('Please enter a valid email address.'),
+  fullName: z.string().trim().min(2, 'Full name is required.').max(100),
+  email: z.string().trim().email('Please enter a valid email address.').max(254),
   category: z.string().min(1, 'Please select a category.'),
-  title: z.string().min(5, 'Title must be at least 3 characters.'),
-  description: z.string().min(20, 'Description must be at least 20 characters.'),
-  price: z.coerce.number<number>().min(1, 'Please enter a valid price.'),
+  title: z.string().trim().min(5, 'Title must be at least 5 characters.').max(160),
+  description: z.string().trim().min(20, 'Description must be at least 20 characters.').max(10000),
+  price: z.coerce.number<number>().positive('Please enter a valid price.').max(10000000).multipleOf(0.01, 'Use no more than two decimal places.'),
   contactMethod: z.enum(['Email', 'Phone', 'WhatsApp']),
   contactDetail: z.string().optional(),
 }).refine(data => {
     if (data.contactMethod === 'Phone' || data.contactMethod === 'WhatsApp') {
-        return !!data.contactDetail && data.contactDetail.length > 5;
+        return !!data.contactDetail?.trim().match(/^\+?[\d\s-]{10,16}$/);
     }
     return true;
 }, {
-    message: 'Phone/WhatsApp number is required.',
+    message: 'Enter a valid Phone/WhatsApp number.',
     path: ['contactDetail']
 });
 
@@ -57,13 +57,17 @@ type ManualSellFormValues = z.infer<typeof manualSellSchema>;
 export default function ManualSellForm() {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<(File & { preview: string })[]>([]);
+  const filesRef = useRef(files);
+  filesRef.current = files;
   const { toast } = useToast();
+  const { user } = useAuth();
+  useEffect(() => () => filesRef.current.forEach(file => URL.revokeObjectURL(file.preview)), []);
 
   const form = useForm<ManualSellFormValues>({
     resolver: zodResolver(manualSellSchema),
     defaultValues: {
-      fullName: '',
-      email: '',
+      fullName: user?.fullName || '',
+      email: user?.email || '',
       category: '',
       title: '',
       description: '',
@@ -75,6 +79,11 @@ export default function ManualSellForm() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/jpeg': [], 'image/png': [], 'image/webp': [] },
+    maxSize: 5 * 1024 * 1024,
+    disabled: loading,
+    onDropRejected: rejected => {
+      toast({ variant: 'destructive', title: 'Some images could not be added', description: rejected.some(file => file.errors.some(error => error.code === 'file-too-large')) ? 'Each image must be 5 MB or smaller.' : 'Choose JPEG, PNG or WebP images.' });
+    },
     onDrop: acceptedFiles => {
       if (files.length + acceptedFiles.length > 10) {
         toast({
@@ -82,6 +91,10 @@ export default function ManualSellForm() {
           title: 'Too many images',
           description: 'You can upload a maximum of 10 images.',
         });
+        return;
+      }
+      if ([...files, ...acceptedFiles].reduce((total, file) => total + file.size, 0) > 25 * 1024 * 1024) {
+        toast({ variant: 'destructive', title: 'Images are too large together', description: 'Keep the total upload under 25 MB.' });
         return;
       }
       setFiles(prevFiles => [
@@ -133,7 +146,7 @@ export default function ManualSellForm() {
 
       toast({
         title: 'Success!',
-        description: 'Your sell request has been submitted. We will get back to you shortly.',
+        description: 'Your listing is awaiting review. Follow its progress under Account → Sell Requests.',
       });
       form.reset();
       files.forEach(f => URL.revokeObjectURL(f.preview));
@@ -161,7 +174,7 @@ export default function ManualSellForm() {
                             <FormItem>
                                 <FormLabel>Full Name</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="John Doe" {...field} />
+                                    <Input placeholder="Your full name" autoComplete="name" maxLength={100} {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -170,7 +183,7 @@ export default function ManualSellForm() {
                             <FormItem>
                                 <FormLabel>Email Address</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="you@example.com" {...field} />
+                                    <Input type="email" autoComplete="email" placeholder="you@example.com" maxLength={254} {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -181,7 +194,7 @@ export default function ManualSellForm() {
                          <FormField control={form.control} name="category" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Item Category</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
                                     </FormControl>
@@ -196,7 +209,7 @@ export default function ManualSellForm() {
                             <FormItem>
                                 <FormLabel>Asking Price (₹)</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="e.g., 5000" {...field} />
+                                    <Input type="number" min="0.01" max="10000000" step="0.01" inputMode="decimal" placeholder="e.g., 5000" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -207,7 +220,7 @@ export default function ManualSellForm() {
                         <FormItem>
                             <FormLabel>Item Title</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., Grade A English Willow Cricket Bat" {...field} />
+                                <Input maxLength={160} placeholder="e.g., Grade A English Willow Cricket Bat" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -217,21 +230,21 @@ export default function ManualSellForm() {
                         <FormItem>
                             <FormLabel>Item Description</FormLabel>
                             <FormControl>
-                                <Textarea rows={4} placeholder="Describe the item's condition, age, brand, and any wear or tear." {...field} />
+                                <Textarea maxLength={10000} rows={4} placeholder="Describe the item's condition, age, brand, and any wear or tear." {...field} />
                             </FormControl>
                              <FormMessage />
                         </FormItem>
                     )} />
 
                     <div>
-                        <FormLabel>Upload Images (Min 5, Max 10)</FormLabel>
-                        <div {...getRootProps()} className={cn("mt-2 flex justify-center rounded-lg border-2 border-dashed border-input px-6 py-10 cursor-pointer hover:border-primary transition-colors", isDragActive && "border-primary bg-primary/10", form.formState.errors.root?.images && "border-destructive")}>
+                        <p id="listing-images-label" className="text-sm font-medium">Upload Images (Min 3, Max 10)</p>
+                        <div {...getRootProps({ 'aria-labelledby': 'listing-images-label', 'aria-describedby': 'listing-images-guide' })} className={cn("mt-2 flex justify-center rounded-lg border-2 border-dashed border-input px-6 py-10 cursor-pointer hover:border-primary transition-colors", isDragActive && "border-primary bg-primary/10", form.formState.errors.root?.images && "border-destructive", loading && "pointer-events-none opacity-60")}>
                             <div className="text-center">
                                 <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <p className="mt-4 text-sm text-muted-foreground">
                                     {isDragActive ? 'Drop the files here...' : 'Drag & drop images here, or click to select'}
                                 </p>
-                                <p className="text-xs text-muted-foreground/80">3–10 JPEG, PNG or WebP images. Up to 5 MB each, 25 MB total.</p>
+                                <p id="listing-images-guide" className="text-xs text-muted-foreground">3–10 JPEG, PNG or WebP images. Up to 5 MB each, 25 MB total.</p>
                                 <Input {...getInputProps()} />
                             </div>
                         </div>
@@ -242,8 +255,8 @@ export default function ManualSellForm() {
                             <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
                                 {files.map((file, i) => (
                                     <div key={i} className="relative aspect-square group">
-                                        <Image src={file.preview} alt={`Preview ${i}`} fill className="object-cover rounded-md" onLoad={() => URL.revokeObjectURL(file.preview)} />
-                                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeFile(file)}>
+                                        <Image src={file.preview} alt={`Selected image ${i + 1}`} fill sizes="(max-width: 640px) 25vw, 120px" className="object-cover rounded-md" />
+                                        <Button type="button" variant="destructive" size="icon" disabled={loading} aria-label={`Remove image ${i + 1}`} className="absolute right-0 top-0 h-10 w-10 rounded-full shadow-md" onClick={() => removeFile(file)}>
                                             <X className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -256,7 +269,7 @@ export default function ManualSellForm() {
                         <FormItem className="space-y-3">
                             <FormLabel>Preferred Contact Method</FormLabel>
                             <FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col sm:flex-row gap-4">
+                                <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col sm:flex-row gap-4">
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl><RadioGroupItem value="Email" /></FormControl>
                                         <FormLabel className="font-normal">Email</FormLabel>
@@ -280,7 +293,7 @@ export default function ManualSellForm() {
                             <FormItem>
                                 <FormLabel>{contactMethod} Number</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Enter your number" {...field} />
+                                    <Input type="tel" autoComplete="tel" maxLength={16} placeholder="Enter your number" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

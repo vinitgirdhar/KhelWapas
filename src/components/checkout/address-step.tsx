@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Plus, MapPin, Check } from 'lucide-react';
+import { Plus, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddressDialog } from '@/components/profile/address-dialog-new';
 import type { Address } from '@/types/user';
@@ -28,6 +28,6 @@ export default function AddressStep({ selectedAddress, onSelectAddress }: { sele
     } catch(e) { toast({ variant: 'destructive', title: 'Address not saved', description: (e as Error).message }); }
   }
   return <div className="space-y-5"><div><p className="text-xs font-semibold uppercase tracking-widest text-accent">Step 1 of 2</p><h2 className="mt-2 text-2xl font-semibold">Where should it go?</h2><p className="mt-2 text-sm text-muted-foreground">Choose a saved address or add a new one.</p></div>{loading && <p role="status">Loading your addresses…</p>}{error && <div role="alert"><p>{error}</p><Button onClick={load} variant="outline">Try again</Button></div>}
-    <div className="grid gap-3" role="radiogroup" aria-label="Shipping address">{addresses.map(a => <button type="button" role="radio" aria-checked={selectedAddress?.id === a.id} key={a.id} onClick={() => onSelectAddress(a)} className={`flex items-start gap-3 rounded-2xl border p-5 text-left transition-colors ${selectedAddress?.id === a.id ? 'border-primary bg-primary/5' : 'bg-card hover:bg-muted/40'}`}><MapPin className="mt-1 h-5 w-5 shrink-0 text-primary" /><span className="flex-1"><strong>{a.fullName} · {a.title}</strong><span className="mt-1 block text-sm text-muted-foreground">{a.street}, {a.city}, {a.state} {a.postalCode}</span><span className="block text-sm text-muted-foreground">{a.phone}</span></span>{selectedAddress?.id === a.id && <Check size={18} />}</button>)}</div>
+    <div className="grid min-w-0 gap-3" role="radiogroup" aria-label="Shipping address">{addresses.map(a => <label key={a.id} className={`flex min-h-11 min-w-0 cursor-pointer items-start gap-3 rounded-2xl border p-5 text-left transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${selectedAddress?.id === a.id ? 'border-primary bg-primary/5' : 'bg-card hover:bg-muted/40'}`}><MapPin aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-primary" /><span className="min-w-0 flex-1 break-words"><strong>{a.fullName} · {a.title}</strong><span className="mt-1 block text-sm text-muted-foreground">{a.street}, {a.city}, {a.state} {a.postalCode}</span><span className="block text-sm text-muted-foreground">{a.phone}</span></span><input type="radio" name="shipping-address" value={a.id} checked={selectedAddress?.id === a.id} onChange={() => onSelectAddress(a)} className="mt-1 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" /></label>)}</div>
     <Button variant="outline" onClick={() => setOpen(true)}><Plus />Add an address</Button><AddressDialog isOpen={open} onOpenChange={setOpen} onSave={save} address={null} /></div>;
 }

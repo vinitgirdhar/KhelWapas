@@ -48,14 +48,14 @@ export default function ProfileSellRequestsPage() {
         ) : (
           <div className="space-y-3">
             {requests.map((req) => (
-              <div key={req.id} className="flex items-center justify-between border rounded-md p-3">
-                <div>
+              <div key={req.id} className="flex flex-wrap items-start justify-between gap-3 border rounded-xl p-4">
+                <div className="min-w-0 flex-1 basis-40 break-words">
                   <div className="font-medium">{req.title}</div>
                   {req.reviewReason && <p className="mt-1 text-sm text-muted-foreground">Review note: {req.reviewReason}</p>}
                   {req.product && <Link href={`/products/${req.product.id}`} className="text-sm text-primary underline">{req.product.stock > 0 ? 'View your listing' : 'Sold · View listing'}</Link>}
                   <div className="text-xs text-muted-foreground">{new Date(req.createdAt).toLocaleString()}</div>
                 </div>
-                <Badge variant="outline">{req.status}</Badge>
+                <Badge variant="outline" className="shrink-0">{req.status}</Badge>
               </div>
             ))}
           </div>

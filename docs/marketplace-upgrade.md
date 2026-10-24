@@ -26,8 +26,8 @@ Run one Node instance with persistent SQLite and upload storage. JSON totals are
 
 - TypeScript typecheck passed with build errors enabled.
 - Optimized production build passed on Next.js 15.5.28 / Node.js 24.
-- Five domain tests passed.
-- Nineteen end-to-end checks passed in one full run, covering the marketplace and the five responsive layout/theme refinements.
+- Seven domain tests cover marketplace validation, safe return paths and persisted-cart boundaries.
+- The browser suite covers marketplace integrity and responsive layout, theme, help, account and admin refinements.
 - A fresh database applied all nine migrations successfully during the test runs.
 - Production dependency audit: zero known vulnerabilities at verification time. Overrides select patched PostCSS, selector-parser and deepmerge versions; CLI generation/migrations and build were verified with these overrides.
 - Clean-install lockfile dry run and git whitespace checks passed.
@@ -43,6 +43,19 @@ Run one Node instance with persistent SQLite and upload storage. JSON totals are
 - Desktop motion adds gentle hero parallax, an ambient glow and pointer-responsive glass. Product cards animate as asynchronous results arrive. Media-query and route cleanup removes animations/listeners; reduced-motion users receive static content.
 - Added five browser checks covering responsive grid/footer geometry, authentication gating, theme/device/storage behavior, dark mobile controls and motion cleanup. An independent read-only review also checked theme hydration, navigation and contrast.
 
-Refinement verification: 19 browser tests and five domain tests passed; typecheck, production build and whitespace checks passed. Updated production screenshots cover light/dark layouts at 390px and 1440px.
+The initial responsive revision passed 19 browser tests and five domain tests, plus typecheck, production build and whitespace checks. Updated production screenshots cover light/dark layouts at 390px and 1440px.
 
 The compact mobile revision reduces repeated promotional content: shorter hero with paired actions, one row of benefits, featured products, and paired footer groups. Desktop retains the additional promo/process content. Dark surfaces and glass are neutral charcoal with orange accents. Targeted layout/theme/motion checks and the production build passed after this revision; regression checks enforce a landing height under 2400px at 390px and neutral dark background RGB channels.
+
+## Senior engineering refinement review
+
+Separate frontend, marketplace and admin engineering agents implemented fixes, followed by an independent read-only integration review.
+
+- Removed the global floating help launcher. Header/menu support opens an accessible, focus-managed sheet that tracks the visible viewport; quick prompts collapse for short keyboard/landscape views. Menus scroll on short screens and the desktop header switches layout before its controls become crowded.
+- Product details, accounts, addresses, dialogs and notifications wrap long values and fit narrow screens. Seller image controls are visible on touch devices, enforce the documented limits, and clean up previews. Featured sport filters query the server directly and offer retry.
+- Cart quantities respect stock and the 50-product checkout limit. Persisted cart rows are normalized before rendering or mutation. Purchase intent survives registration; safe internal redirects, cookie sessions and checkout remain usable when web storage is blocked.
+- Checkout uses native keyboard-accessible radio controls, displays the server-quoted address and offers a price/availability refresh. Revenue uses frozen product types and complete totals, excludes refunds and links to the correct order references.
+- Admin lists have pagination, functional filters, loading/error/retry states and bounded mobile tables. Product publication is independent of stock; archive wording matches its reversible behavior. Order actions follow valid transitions, invoice printing works, and completed seller reviews cannot be submitted again.
+- The independent review caught an order-tab selection mismatch after pagination and discarded cancellation reasons. Controlled tabs preserve the selected state. Cancellation reasons are validated and stored transactionally with existing notes, status events, simulated refunds and inventory restoration; repeats do not duplicate the note or restoration.
+
+Prototype hosting and live-service boundaries above still apply.

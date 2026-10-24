@@ -97,3 +97,46 @@ test('desktop motion cleans up on navigation and disables for reduced motion', a
   await expect(page.locator('.product-card').first()).not.toHaveAttribute('style', /transform|opacity/);
   expect(errors).toEqual([]);
 });
+
+test('help opens from navigation without a floating launcher and fits short mobile screens', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Open KhelBot' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Ask KhelBot', exact: true })).not.toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await page.getByRole('button', { name: 'Ask KhelBot', exact: true }).click();
+  const help = page.getByRole('dialog', { name: 'KhelBot', exact: true });
+  await expect(help).toBeVisible();
+  await expect(help.getByRole('log')).toBeFocused();
+  await help.getByRole('button', { name: 'Demo payments', exact: true }).click();
+  await expect(help.getByRole('log')).toContainText('No money moves');
+  for (const height of [260, 420, 568]) {
+    await page.setViewportSize({ width: 320, height });
+    await expect.poll(async () => {
+      const box = await help.boundingBox();
+      return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= 321 && box.y + box.height <= height + 1;
+    }).toBe(true);
+    const send = await help.getByRole('button', { name: 'Send question', exact: true }).boundingBox();
+    expect(send!.y + send!.height).toBeLessThanOrEqual(height);
+  }
+  await help.getByLabel('Your question').fill('How do I sell my bat?');
+  await help.getByRole('button', { name: 'Send question', exact: true }).click();
+  await expect(help.getByRole('log')).toContainText('3–10 JPEG');
+  await help.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Open menu' })).toBeFocused();
+  for (const width of [320, 390, 768, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.locator('header').evaluate(el => el.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const trigger = page.getByRole('button', { name: 'Ask KhelBot', exact: true });
+  expect((await trigger.boundingBox())!.y).toBeLessThan(76);
+  await trigger.click();
+  await expect(help).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
+  expect(errors).toEqual([]);
+});

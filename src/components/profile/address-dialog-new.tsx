@@ -35,12 +35,12 @@ import { Checkbox } from '../ui/checkbox';
 import { Separator } from '../ui/separator';
 
 const addressSchema = z.object({
-  title: z.string().min(1, 'Address title is required (e.g., Home, Office).'),
-  fullName: z.string().min(2, 'Full name is required.'),
-  phone: z.string().min(10, 'A valid phone number is required.'),
-  street: z.string().min(5, 'Street address is required.'),
-  city: z.string().min(2, 'City is required.'),
-  state: z.string().min(2, 'State is required.'),
+  title: z.string().trim().min(1, 'Address title is required (e.g., Home, Office).').max(40),
+  fullName: z.string().trim().min(2, 'Full name is required.').max(100),
+  phone: z.string().trim().regex(/^\+?[\d\s-]{10,16}$/, 'Enter a valid phone number.'),
+  street: z.string().trim().min(5, 'Street address is required.').max(250),
+  city: z.string().trim().min(2, 'City is required.').max(100),
+  state: z.string().min(2, 'State is required.').max(100),
   postalCode: z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit PIN code.'),
   country: z.string().min(2, 'Country is required.'),
   isDefault: z.boolean(),
@@ -129,7 +129,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
             {address ? 'Edit Address' : 'Add New Address'}
@@ -151,7 +151,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
                 <FormItem>
                   <FormLabel>Address Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Home, Office, Parents' House" {...field} />
+                    <Input maxLength={40} placeholder="e.g., Home, Office, Parents' House" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -168,7 +168,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Recipient's full name" {...field} />
+                      <Input autoComplete="shipping name" maxLength={100} placeholder="Recipient's full name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -182,7 +182,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="10-digit mobile number" {...field} />
+                      <Input type="tel" autoComplete="shipping tel" maxLength={16} placeholder="10-digit mobile number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,7 +198,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
                   <FormLabel>Street Address</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="House number, building name, street name, area"
+                      autoComplete="shipping street-address" maxLength={250} placeholder="House number, building name, street name, area"
                       className="min-h-[80px]"
                       {...field} 
                     />
@@ -216,7 +216,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
                   <FormItem>
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input placeholder="City name" {...field} />
+                      <Input autoComplete="shipping address-level2" maxLength={100} placeholder="City name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -230,7 +230,7 @@ export function AddressDialog({ isOpen, onOpenChange, onSave, address }: Address
                   <FormItem>
                     <FormLabel>Postal Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="6-digit PIN code" {...field} />
+                      <Input inputMode="numeric" autoComplete="shipping postal-code" maxLength={6} placeholder="6-digit PIN code" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

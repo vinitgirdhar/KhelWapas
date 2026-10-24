@@ -75,34 +75,39 @@ export default function AdminOrdersPage() {
     const [activeTab, setActiveTab] = React.useState<OrderStatus | 'all'>('all');
     const [orders, setOrders] = React.useState<Order[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState('');
+    const [page, setPage] = React.useState(1);
+    const [refresh, setRefresh] = React.useState(0);
 
     // Fetch orders from API
     React.useEffect(() => {
+        const controller = new AbortController();
+        setLoading(true); setError('');
         const fetchOrders = async () => {
             try {
-                const response = await fetch('/api/orders', {
+                const response = await fetch(`/api/orders?page=${page}&limit=20`, {
+                    signal: controller.signal,
                     credentials: 'include', // Include cookies for authentication
                     headers: {
                         'Content-Type': 'application/json',
                     },
                 });
                 const data = await response.json();
-                console.log('Orders API response:', data); // Debug log
                 if (data.success && data.orders) {
-                    console.log(`Loaded ${data.orders.length} orders`); // Debug log
                     setOrders(data.orders);
                 } else {
-                    console.error('Failed to load orders:', data.message);
+                    throw new Error(data.message || 'Could not load orders');
                 }
             } catch (error) {
-                console.error('Failed to fetch orders:', error);
+                if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load orders');
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) setLoading(false);
             }
         };
 
-        fetchOrders();
-    }, []);
+        void fetchOrders();
+        return () => controller.abort();
+    }, [page, refresh]);
 
     const filteredOrders = React.useMemo(() => {
         let filtered = orders;
@@ -146,7 +151,7 @@ export default function AdminOrdersPage() {
                 order.orderStatus,
                 order.pickupStatus,
                 format(new Date(order.orderDate), "PP"),
-                `₹${order.amount.toLocaleString('en-IN')}`
+                `INR ${order.amount.toLocaleString('en-IN')}`
             ];
             tableRows.push(orderData);
         });
@@ -161,7 +166,7 @@ export default function AdminOrdersPage() {
     };
 
   return (
-    <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+    <main className="grid min-w-0 flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       {loading ? (
         <Card>
           <CardContent className="py-12">
@@ -170,28 +175,29 @@ export default function AdminOrdersPage() {
             </div>
           </CardContent>
         </Card>
-      ) : (
-      <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as OrderStatus | 'all')}>
-        <div className="flex items-center">
-          <TabsList>
+      ) : error ? <Card><CardContent className="space-y-3 py-8" role="alert"><p>{error}</p><Button variant="outline" onClick={() => setRefresh(value => value + 1)}>Try again</Button></CardContent></Card> : (
+      <Tabs className="min-w-0" value={activeTab} onValueChange={(value) => setActiveTab(value as OrderStatus | 'all')}>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0 max-w-full overflow-x-auto"><TabsList className="h-11">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="Pending">Pending</TabsTrigger>
             <TabsTrigger value="Shipped">Shipped</TabsTrigger>
             <TabsTrigger value="Delivered">Delivered</TabsTrigger>
             <TabsTrigger value="Cancelled">Cancelled</TabsTrigger>
-          </TabsList>
-           <div className="ml-auto flex items-center gap-2">
-             <div className="relative">
+          </TabsList></div>
+           <div className="flex min-w-0 flex-1 items-center gap-2">
+             <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                 type="search"
-                placeholder="Search orders..."
-                className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+                aria-label="Search orders on this page"
+                placeholder="Search this page…"
+                className="h-11 w-full rounded-lg bg-background pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <Button variant="outline" size="sm" className="h-9 gap-1" onClick={handleExport}>
+            <Button variant="outline" size="sm" className="h-11 gap-1" onClick={handleExport}>
               <File className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Export
@@ -199,6 +205,7 @@ export default function AdminOrdersPage() {
             </Button>
           </div>
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">Filters and export apply to page {page}. Browse other pages below.</p>
         <TabsContent value="all">
             <OrdersTable orders={filteredOrders} />
         </TabsContent>
@@ -216,6 +223,7 @@ export default function AdminOrdersPage() {
         </TabsContent>
       </Tabs>
       )}
+      {!loading && !error && <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Page {page} · {orders.length} orders</p><div className="flex gap-2"><Button variant="outline" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Previous</Button><Button variant="outline" disabled={orders.length < 20} onClick={() => setPage(value => value + 1)}>Next</Button></div></div>}
     </main>
   );
 }
@@ -224,8 +232,8 @@ export default function AdminOrdersPage() {
 function OrdersTable({ orders }: { orders: Order[] }) {
     const router = useRouter();
     const { toast } = useToast();
-    const canCancel = (status: OrderStatus) => !['Delivered', 'Cancelled', 'Returned'].includes(status);
-    const canUpdateStatus = (status: OrderStatus) => !['Cancelled', 'Returned'].includes(status);
+    const canCancel = (status: OrderStatus) => ['Pending', 'Confirmed'].includes(status);
+    const canUpdateStatus = (status: OrderStatus) => ['Pending', 'Confirmed', 'Shipped', 'Delivered'].includes(status);
 
     const handleViewDetails = (orderId: string) => {
         router.push(`/admin/orders/${orderId}`);
@@ -291,7 +299,7 @@ function OrdersTable({ orders }: { orders: Order[] }) {
     }
 
     return (
-         <Card>
+         <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Orders</CardTitle>
             <CardDescription>
@@ -347,21 +355,21 @@ function OrdersTable({ orders }: { orders: Order[] }) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleViewDetails(order.orderId)}>
+                          <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
                             View Details
                           </DropdownMenuItem>
                           {canUpdateStatus(order.orderStatus) && (
-                            <DropdownMenuItem onClick={() => handleViewDetails(order.orderId)}>
+                            <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
                               Update Status
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => window.open(`/invoice/${order.orderId}`, '_blank')}>
+                          <DropdownMenuItem onClick={() => window.open(`/invoice/${order.id}`, '_blank')}>
                             Print Invoice
                           </DropdownMenuItem>
                           {canCancel(order.orderStatus) && (
                             <DropdownMenuItem 
                               className="text-destructive"
-                              onClick={() => handleCancelOrder(order.orderId)}
+                              onClick={() => handleCancelOrder(order.id)}
                             >
                               Cancel Order
                             </DropdownMenuItem>
@@ -376,7 +384,7 @@ function OrdersTable({ orders }: { orders: Order[] }) {
           </CardContent>
           <CardFooter>
             <div className="text-xs text-muted-foreground">
-              Showing <strong>1-{orders.length}</strong> of <strong>{orders.length}</strong> orders
+              <strong>{orders.length}</strong> orders on this page
             </div>
           </CardFooter>
         </Card>

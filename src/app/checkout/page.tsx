@@ -1,5 +1,6 @@
 
 'use client';
+import { getSessionValue, setSessionValue, removeSessionValue } from '@/lib/session-storage';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
@@ -35,9 +36,9 @@ export default function CheckoutPage() {
       return;
     }
     // Persist selected address across reloads if needed, e.g., in sessionStorage
-    const storedAddress = sessionStorage.getItem('selectedAddress');
+    const storedAddress = getSessionValue('selectedAddress');
     if (storedAddress) {
-      try { setSelectedAddress(JSON.parse(storedAddress)); } catch { sessionStorage.removeItem('selectedAddress'); }
+      try { setSelectedAddress(JSON.parse(storedAddress)); } catch { removeSessionValue('selectedAddress'); }
     }
   }, [authLoading, isLoggedIn]);
 
@@ -45,9 +46,9 @@ export default function CheckoutPage() {
     setSelectedAddress(address);
     // Store selected address to persist it if user navigates away and comes back
     if (address) {
-      sessionStorage.setItem('selectedAddress', JSON.stringify(address));
+      setSessionValue('selectedAddress', JSON.stringify(address));
     } else {
-      sessionStorage.removeItem('selectedAddress');
+      removeSessionValue('selectedAddress');
     }
   }
 

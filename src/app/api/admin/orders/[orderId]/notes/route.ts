@@ -9,7 +9,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await requireUser(request, true);
     const order = await findOrder((await params).orderId);
     if (!order) throw new ApiError(404, 'Order not found');
-    const { adminNotes } = z.object({ adminNotes: z.string().max(5000) }).parse(await request.json());
+    // Cancellation can append a bounded system note to an existing 5,000-char note.
+    // Preserve and allow editing that text without forcing the admin to discard it.
+    const { adminNotes } = z.object({ adminNotes: z.string().max(Math.max(5000, order.adminNotes?.length || 0)) }).parse(await request.json());
     const updated = await prisma.order.update({ where: { id: order.id }, data: { adminNotes } });
     return NextResponse.json({ success: true, order: updated, message: 'Order updated' });
   } catch (e) { return apiError(e); }

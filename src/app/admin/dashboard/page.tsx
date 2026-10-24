@@ -21,9 +21,9 @@ import { useToast } from '@/hooks/use-toast';
 import { type SellRequest } from '@/types/user';
 
 const statusConfig: Record<SellRequest['status'], { icon: React.ReactNode; color: string; badge: string; }> = {
-    Pending: { icon: <Clock className="h-3 w-3" />, color: "text-yellow-600 bg-yellow-100/60 border-yellow-500/30", badge: "bg-yellow-500" },
-    Approved: { icon: <CheckCircle className="h-3 w-3" />, color: "text-green-600 bg-green-100/60 border-green-500/30", badge: "bg-green-500" },
-    Rejected: { icon: <XCircle className="h-3 w-3" />, color: "text-red-600 bg-red-100/60 border-red-500/30", badge: "bg-red-500" },
+    Pending: { icon: <Clock className="h-3 w-3" />, color: "text-yellow-800 bg-yellow-100 border-yellow-500/30", badge: "bg-yellow-500" },
+    Approved: { icon: <CheckCircle className="h-3 w-3" />, color: "text-green-800 bg-green-100 border-green-500/30", badge: "bg-green-500" },
+    Rejected: { icon: <XCircle className="h-3 w-3" />, color: "text-red-800 bg-red-100 border-red-500/30", badge: "bg-red-500" },
 };
 
 export default function AdminDashboardPage() {
@@ -44,10 +44,11 @@ export default function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       const [sellRequestsRes, statsRes] = await Promise.all([
-        fetch('/api/admin/sell-requests'),
+        fetch('/api/admin/sell-requests?limit=10'),
         fetch('/api/admin/stats')
       ]);
 
+      if (!sellRequestsRes.ok || !statsRes.ok) throw new Error('Could not load dashboard data');
       if (sellRequestsRes.ok) {
         const data = await sellRequestsRes.json();
         setCurrentSellRequests(data.sellRequests || []);
@@ -143,7 +144,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen min-w-0 w-full flex-col">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4">
          <h1 className="font-headline text-2xl font-bold">Admin Dashboard</h1>
       </header>
@@ -212,7 +213,7 @@ export default function AdminDashboardPage() {
             </Card>
           </Link>
         </div>
-        <Card>
+        <Card className="min-w-0">
             <CardHeader>
                 <CardTitle>Recent Sell Requests</CardTitle>
                 <CardDescription>A list of the most recent manual sell requests from users.</CardDescription>
@@ -279,8 +280,8 @@ export default function AdminDashboardPage() {
                                       <Link href={`/admin/requests/${request.id}`}>View Details</Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleStatusChange(request.id, 'Approved')}>Approve</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(request.id, 'Rejected')}>Reject</DropdownMenuItem>
+                                    <DropdownMenuItem disabled={request.status !== 'Pending'} onClick={() => handleStatusChange(request.id, 'Approved')}>Approve</DropdownMenuItem>
+                                    <DropdownMenuItem disabled={request.status !== 'Pending'} onClick={() => handleStatusChange(request.id, 'Rejected')}>Reject</DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
