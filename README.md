@@ -19,7 +19,9 @@ npm run dev
 
 Open http://localhost:9002. Create a buyer/seller account through Register. If admin credentials were configured before seeding, sign in at `/admin/login` with those credentials. Seeding never resets an existing user's password and includes no built-in login.
 
-`npm run db:seed` creates only the configured admin. `npm run db:seed:mocks` additionally creates clearly labeled sample sports listings using the existing image assets. The tracked development database and credential document have been removed from the working tree.
+`npm run db:seed` creates only the configured admin. `npm run db:seed:mocks` creates or refreshes **110 clearly labeled demo listings: five for each of the 22 sport/equipment categories**, including new and pre-owned equipment. Each product has its own generated WebP image, INR price, condition, description and unique demo SKU. Reseeding updates curated demo content while preserving stock and publication decisions; seller-linked records are protected. `npm run db:remove-mocks` archives those demo listings without deleting history. The tracked development database and credential document have been removed from the working tree.
+
+The demo photos are AI-generated product illustrations, not seller photographs. They are bundled in `public/images/demo-catalog/` and need no external image service. The product page makes their illustrative status explicit. The homepage selects one available item per sport for a varied selection. See [demo catalog notes](docs/demo-catalog.md).
 
 ## Marketplace flow
 

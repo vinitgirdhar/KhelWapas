@@ -26,7 +26,7 @@ Run one Node instance with persistent SQLite and upload storage. JSON totals are
 
 - TypeScript typecheck passed with build errors enabled.
 - Optimized production build passed on Next.js 15.5.28 / Node.js 24.
-- Seven domain tests cover marketplace validation, safe return paths and persisted-cart boundaries.
+- Eight unit checks cover marketplace validation, safe return paths, persisted-cart boundaries and the generated catalog's image assets.
 - The browser suite covers marketplace integrity and responsive layout, theme, help, account and admin refinements.
 - A fresh database applied all nine migrations successfully during the test runs.
 - Production dependency audit: zero known vulnerabilities at verification time. Overrides select patched PostCSS, selector-parser and deepmerge versions; CLI generation/migrations and build were verified with these overrides.
@@ -59,3 +59,7 @@ Separate frontend, marketplace and admin engineering agents implemented fixes, f
 - The independent review caught an order-tab selection mismatch after pagination and discarded cancellation reasons. Controlled tabs preserve the selected state. Cancellation reasons are validated and stored transactionally with existing notes, status events, simulated refunds and inventory restoration; repeats do not duplicate the note or restoration.
 
 Prototype hosting and live-service boundaries above still apply.
+
+## Generated equipment catalog
+
+The prototype now includes 110 individually illustrated listings, five per sport/equipment category, with 66 pre-owned and 44 new products. Generated WebP photographs, prices, condition descriptions and unique SKUs share one catalog mapping. Featured gear selects distinct sports, and product pages label generated demo imagery. Retired bat IDs preserve their identity and archived stock for earlier orders; reseeding preserves sold inventory, publication flags and seller records. See [catalog production and verification notes](demo-catalog.md). The browser suite now contains 34 checks, including category/image coverage and safe catalog refresh.

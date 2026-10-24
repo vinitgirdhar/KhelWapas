@@ -35,6 +35,7 @@ export default function FeaturedProducts() {
       try {
         const params = new URLSearchParams({ available: 'true', limit: '4' });
         if (activeCategory !== 'All') params.set('category', activeCategory);
+        else params.set('featured', 'true');
         const response = await fetch(`/api/products?${params}`, { signal: controller.signal });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Could not load gear');
