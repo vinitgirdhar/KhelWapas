@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
 import { productSchema } from '@/lib/validation';
-import { serializeProduct } from '@/lib/products';
-import { apiError } from '@/lib/api';
+import { serializeProduct } from '@/server/marketplace/products';
+import { apiError } from '@/server/api';
 export async function POST(request: NextRequest) {
   try {
     await requireUser(request, true);

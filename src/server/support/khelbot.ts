@@ -1,7 +1,7 @@
 'use server';
 import { z } from 'zod';
 /** Offline help keeps the prototype useful without external AI credentials. */
-export async function chatWithKhelbot(input: { message: string; history?: { role: 'user' | 'model'; content: { text: string }[] }[] }): Promise<string> {
+export async function chatWithKhelbot(input: { message: string }): Promise<string> {
   const { message } = z.object({ message: z.string().trim().min(1).max(2000) }).parse(input);
   const query = message.toLowerCase();
   if (/pay|refund|card|upi/.test(query)) return 'This prototype uses a payment simulator. At checkout, choose a successful or declined demo payment. No money moves and no banking details are needed. Demo cancellations restore stock and mark the simulated payment as refunded.';

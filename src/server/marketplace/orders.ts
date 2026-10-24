@@ -1,8 +1,8 @@
 import { createHash } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { prisma } from './prisma';
-import { ApiError } from './api';
+import { prisma } from '@/server/db';
+import { ApiError } from '@/server/api';
 export const quoteSchema = z.object({
   items: z.array(z.object({ productId: z.string().min(1).max(100), quantity: z.number().int().min(1).max(100) })).min(1).max(50),
   addressId: z.string().min(1).max(100),

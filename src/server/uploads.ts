@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { mkdir, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
-import { ApiError } from './api';
+import { ApiError } from '@/server/api';
 export async function storeImages(files: FormDataEntryValue[], kind: 'products' | 'profile', minimum = 1) {
   if (files.length < minimum || files.length > 10 || files.some(f => !(f instanceof File))) throw new ApiError(400, `Upload ${minimum}–10 images`);
   if (files.reduce((n, f) => n + (f as File).size, 0) > 25 * 1024 * 1024) throw new ApiError(413, 'Images must total less than 25 MB');

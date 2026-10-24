@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/auth';
-import { apiError } from '@/lib/api';
-import { rateLimit } from '@/lib/rate-limit';
-import { storeImages } from '@/lib/uploads';
+import { requireUser } from '@/server/auth';
+import { apiError } from '@/server/api';
+import { rateLimit } from '@/server/rate-limit';
+import { storeImages } from '@/server/uploads';
 export async function POST(request: NextRequest) {
   try {
     const user = await requireUser(request);

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError } from '@/lib/api';
-import { rateLimit } from '@/lib/rate-limit';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError } from '@/server/api';
+import { rateLimit } from '@/server/rate-limit';
 import { emailSchema } from '@/lib/validation';
-import { storeImages, removeImages } from '@/lib/uploads';
+import { storeImages, removeImages } from '@/server/uploads';
 const schema = z.object({ fullName: z.string().trim().min(2).max(100), email: emailSchema, category: z.string().trim().min(2).max(60), title: z.string().trim().min(5).max(160), description: z.string().trim().min(20).max(10000), price: z.coerce.number().finite().positive().max(10000000).multipleOf(0.01), contactMethod: z.enum(['Email','Phone','WhatsApp']), contactDetail: z.string().max(100).optional() }).refine(v => v.contactMethod === 'Email' || !!v.contactDetail?.match(/^\+?[\d\s-]{10,16}$/), { message: 'Enter a valid contact number', path: ['contactDetail'] });
 export async function POST(request: NextRequest) {
   let imageUrls: string[] = [];

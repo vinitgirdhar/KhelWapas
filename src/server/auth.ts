@@ -2,8 +2,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
-import { prisma } from './prisma';
-import { ApiError } from './api';
+import { prisma } from '@/server/db';
+import { ApiError } from '@/server/api';
 
 function secret() {
   const value = process.env.JWT_SECRET;

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { serializeProduct } from '@/lib/products';
-import { apiError, pagination } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { serializeProduct } from '@/server/marketplace/products';
+import { apiError, pagination } from '@/server/api';
 export async function GET(request: NextRequest) {
   try {
     const params = request.nextUrl.searchParams, { page, limit, skip } = pagination(params);

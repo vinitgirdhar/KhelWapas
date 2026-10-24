@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { checkoutSchema, createDemoOrder } from '@/lib/orders';
-import { requireUser } from '@/lib/auth';
-import { apiError, pagination } from '@/lib/api';
-import { rateLimit } from '@/lib/rate-limit';
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
+import { checkoutSchema, createDemoOrder } from '@/server/marketplace/orders';
+import { requireUser } from '@/server/auth';
+import { apiError, pagination } from '@/server/api';
+import { rateLimit } from '@/server/rate-limit';
+import { NextRequest,NextResponse } from 'next/server';
+import { prisma } from '@/server/db';
+import { getCurrentUser } from '@/server/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Pagination support
     const { searchParams } = new URL(request.url)
-    const { page, limit, skip } = pagination(searchParams)
+    const { limit, skip } = pagination(searchParams)
 
     const orders = await prisma.order.findMany({
       where,

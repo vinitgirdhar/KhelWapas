@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AddressDialog } from '@/components/profile/address-dialog-new';
+import { AddressDialog } from '@/components/profile/address-dialog';
 import type { Address } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 export default function AddressStep({ selectedAddress, onSelectAddress }: { selectedAddress: Address | null; onSelectAddress: (address: Address | null) => void }) {

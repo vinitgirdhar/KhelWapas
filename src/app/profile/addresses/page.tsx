@@ -1,1 +1,1 @@
-export { default } from '@/components/profile/enhanced-addresses-page';
+export { default } from '@/components/profile/addresses-page';

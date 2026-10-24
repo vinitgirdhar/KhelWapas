@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FlaskConical, CheckCircle2, XCircle, Loader2, LockKeyhole } from 'lucide-react';
-import { useCart, type CartItem } from '@/hooks/use-cart';
+import { useCart } from '@/hooks/use-cart';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';

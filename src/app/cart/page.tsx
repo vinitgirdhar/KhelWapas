@@ -9,7 +9,6 @@ import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
 import { Minus, Plus, Trash2, ShoppingCart, BaggageClaim, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { savePurchaseIntent } from '@/lib/purchase-intent';

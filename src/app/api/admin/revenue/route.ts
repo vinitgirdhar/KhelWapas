@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError } from '@/server/api';
 
 type SnapshotItem = { type?: string; quantity?: number };
 function itemsFromSnapshot(snapshot: Prisma.JsonValue): SnapshotItem[] {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError, ApiError } from '@/server/api';
 import { addressSchema } from '@/lib/validation';
 export async function GET(request: NextRequest) {
   try { const user = await requireUser(request); return NextResponse.json(await prisma.address.findMany({ where: { userId: user.userId }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }], take: 20 })); } catch (e) { return apiError(e); }

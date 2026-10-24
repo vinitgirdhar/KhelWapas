@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireUser } from '@/lib/auth';
-import { findOrder, changeOrderStatus } from '@/lib/orders';
-import { apiError, ApiError } from '@/lib/api';
+import { requireUser } from '@/server/auth';
+import { findOrder, changeOrderStatus } from '@/server/marketplace/orders';
+import { apiError, ApiError } from '@/server/api';
 export async function POST(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   try {
     await requireUser(request, true);

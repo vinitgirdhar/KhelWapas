@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { findOrder } from '@/lib/orders';
-import { orderView } from '@/lib/order-view';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { findOrder } from '@/server/marketplace/orders';
+import { orderView } from '@/server/marketplace/order-view';
+import { apiError, ApiError } from '@/server/api';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   try {
     await requireUser(request, true);

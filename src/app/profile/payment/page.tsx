@@ -1,1 +1,1 @@
-export { default } from '@/components/profile/enhanced-payment-methods-page';
+export { default } from '@/components/profile/payment-info';

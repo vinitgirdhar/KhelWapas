@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AddressDialog } from './address-dialog-new';
+import { AddressDialog } from '@/components/profile/address-dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Address } from '@/types/user';
 export default function AddressesPage() {

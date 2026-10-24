@@ -144,7 +144,8 @@ test('desktop home and mobile shop/cart preserve layout and hydrate without erro
 });
 
 test('browser checkout completes with a demo failure then success and a real invoice', async ({ page }) => {
-  const user = await account(), saved = await address(user.api);
+  const user = await account();
+  await address(user.api);
   await page.context().addCookies((await user.api.storageState()).cookies);
   await page.goto('/products/demo-cricket'); await page.getByRole('button', { name: 'Add to Cart' }).click();
   await page.goto('/checkout'); await expect(page.getByRole('radio', { name: /Prototype Player/ })).toBeVisible();

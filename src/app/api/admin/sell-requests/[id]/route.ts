@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError, ApiError } from '@/server/api';
 type Context = { params: Promise<{ id: string }> };
 export async function PATCH(request: NextRequest, { params }: Context) {
   try {

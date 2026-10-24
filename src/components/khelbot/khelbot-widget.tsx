@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Send } from 'lucide-react';
-import { chatWithKhelbot } from '@/ai/flows/khelbot-chat';
+import { chatWithKhelbot } from '@/server/support/khelbot';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
