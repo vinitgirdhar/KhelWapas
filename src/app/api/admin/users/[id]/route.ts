@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError, ApiError } from '@/server/api';
 import { emailSchema } from '@/lib/validation';
 const select = { id: true, fullName: true, email: true, phone: true, role: true, status: true, createdAt: true, updatedAt: true, _count: { select: { orders: true, sellRequests: true } } };
 type Context = { params: Promise<{ id: string }> };

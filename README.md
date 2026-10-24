@@ -1,55 +1,101 @@
 # KhelWapas
 
-A prototype marketplace for new and pre-owned sports equipment. The original navy/orange palette and logo are preserved, with glass navigation, Apple system fonts, responsive shopping pages, signed-in mobile navigation, and GSAP animation that respects reduced motion. Mobile products use two columns, with four featured items on the home page and paired footer navigation groups. The compact mobile landing uses a shorter hero and a single benefits row; additional promo and process sections appear on desktop. Dark mode uses charcoal glass with the original orange accent. A header toggle switches between light and dark themes; the initial theme follows the device and an explicit choice persists across visits and tabs. KhelBot opens on demand from the desktop header or mobile menu, with no floating launcher covering content. Its accessible panel follows the visible viewport and compacts when the keyboard leaves little room.
+A prototype marketplace for new and pre-owned sports equipment, built with Next.js, React, TypeScript, Tailwind CSS, Prisma and SQLite.
 
-## Run locally
+Buyers can browse and filter gear, save addresses, run a simulated checkout and view demo invoices. Sellers submit photographed equipment for admin review. Admins manage listings, inventory, requests, orders and demo pickup plans. Payments, refunds, delivery and pickups are simulations; the app does not collect banking details or book couriers.
 
-Requires Node.js 22 or 24 and npm.
+The interface supports mobile two-column product grids, light/dark themes, glass surfaces and GSAP motion with reduced-motion support. KhelBot provides offline marketplace guidance. The price guide uses comparable asking-price listings and reports an indicative estimate.
+
+## Local setup
+
+Use Node.js 22 or 24 and npm. The commands below use a Bash-compatible shell; the browser test runner also requires OpenSSL.
 
 ```sh
 npm ci
 cp .env.example .env
-# Set JWT_SECRET to a unique value, for example: openssl rand -hex 32
-# Optionally set DEMO_ADMIN_EMAIL and DEMO_ADMIN_PASSWORD (12+ characters).
+```
+
+Edit `.env` before starting:
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | SQLite connection, for example `file:./prototype.db`; relative paths resolve from `prisma/`. |
+| `JWT_SECRET` | A unique random secret of at least 32 characters. Generate one with `openssl rand -hex 32`. |
+| `APP_URL` | The app origin, `http://localhost:9002` for local development. |
+| `DEMO_ADMIN_EMAIL` | Optional admin account created by the seed command. |
+| `DEMO_ADMIN_PASSWORD` | Required with the admin email; use at least 12 characters. |
+
+```sh
 touch prisma/prototype.db
 npm run db:migrate
 npm run db:seed:mocks
 npm run dev
 ```
 
-Open http://localhost:9002. Create a buyer/seller account through Register. If admin credentials were configured before seeding, sign in at `/admin/login` with those credentials. Seeding never resets an existing user's password and includes no built-in login.
+Open **http://localhost:9002**. Register to create a buyer/seller account. If admin credentials were configured, sign in at `/admin/login`. There is no built-in password, and seeding does not reset existing passwords.
 
-`npm run db:seed` creates only the configured admin. `npm run db:seed:mocks` creates or refreshes **110 clearly labeled demo listings: five for each of the 22 sport/equipment categories**, including new and pre-owned equipment. Each product has its own generated WebP image, INR price, condition, description and unique demo SKU. Reseeding updates curated demo content while preserving stock and publication decisions; seller-linked records are protected. `npm run db:remove-mocks` archives those demo listings without deleting history. The tracked development database and credential document have been removed from the working tree.
+For a local production build, run `npm run build` and `npm start -- --port 9002`.
 
-The demo photos are AI-generated product illustrations, not seller photographs. They are bundled in `public/images/demo-catalog/` and need no external image service. The product page makes their illustrative status explicit. The homepage selects one available item per sport for a varied selection. See [demo catalog notes](docs/demo-catalog.md).
+## Project structure
 
-## Marketplace flow
+```text
+src/
+  app/          Next.js pages, layouts, API routes and global styles
+  components/   Feature components and shared UI primitives
+  data/         Demo product catalog and image mapping
+  hooks/        Client authentication, cart, storage and UI state
+  lib/          Shared validation, categories and client-safe utilities
+  server/       Authentication, database, uploads and server business logic
+    marketplace/  Catalog serialization, checkout and order operations
+    pricing/      Indicative asking-price estimation
+    support/      Offline KhelBot help
+  types/        Shared domain interfaces
+prisma/         Database schema, migration history and seed commands
+scripts/        Browser-test runner and catalog image export utility
+tests/          Unit and Playwright tests, with shared test helpers
+public/         Static assets, generated demo photos and retained upload assets
+docs/           Maintained catalog production guide
+.github/        Continuous integration
+```
 
-1. Sellers sign in and upload 3–10 JPEG/PNG/WebP photos, describe equipment, and set an asking price. The form supports sports from athletics through yoga and other equipment.
-2. Admins review requests at `/admin/requests`. Approval publishes one seller-linked listing in a transaction. Rejection preserves a review note. Sellers can follow status from their account.
-3. Buyers search/filter/sort the catalog, add gear to their bag, and save an address. Checkout obtains a current server quote.
-4. The clearly labeled payment simulator offers success or failure. It never requests card numbers, CVVs, UPI IDs, or bank credentials. Successful demo checkout reserves stock; failed checkout leaves stock and the bag unchanged.
-5. Admins update valid fulfillment transitions. Cancellation and returns restore inventory once and mark a simulated refund. Orders retain item prices, delivery addresses, events, and notes. Buyers can print their own demo invoices.
-6. Demo pickup plans persist without booking a courier. Email invoice delivery explicitly reports that it is not connected. Khelbot provides offline marketplace help. The price guide uses current listing asking prices and clearly marks estimates as indicative.
+Next.js, TypeScript, Tailwind, PostCSS and Playwright configuration files stay at the root where their tools expect them. `.idx/` contains the Firebase Studio workspace configuration; `apphosting.yaml` contains the existing hosting configuration. Generated build output, local data, secrets and browser artifacts are ignored by Git. Contributor rules are in [AGENTS.md](AGENTS.md).
 
-## Validation
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Development server on port 9002. |
+| `npm run build` / `npm start` | Build and start the production server. |
+| `npm run typecheck` | Strict TypeScript checks, including unused imports and parameters. |
+| `npm run db:migrate` | Apply committed database migrations. |
+| `npm run db:seed` | Create only the configured admin account. |
+| `npm run db:seed:mocks` | Create or refresh the generated demo catalog. |
+| `npm run db:remove-mocks` | Archive controlled demo listings without deleting history. |
+| `npm run test:unit` | Run domain, validation and generated-asset checks. |
+| `npm test` | Run Playwright against a disposable seeded database. |
+
+## Demo catalog
+
+The catalog contains **110 products: five per sport/equipment category**, with 66 pre-owned and 44 new listings. Each has its own generated image, price, description, condition and SKU. Photos are bundled as WebP files and labeled as AI-generated demonstration imagery on product pages.
+
+Refreshing demo content preserves stock and publication decisions and protects seller-linked records. Retired bat IDs retain their original identities for old orders. Archiving demos is reversible through the admin editor. See [the catalog guide](docs/demo-catalog.md) for mappings, image export and seed behavior.
+
+## Verification
 
 ```sh
 npm run typecheck
-npm run build
 npm run test:unit
+npm run build
 npx playwright install --with-deps chromium
 npm test
 ```
 
-Tests create and remove an isolated SQLite database and generate disposable admin credentials. They never use the local prototype database. The suite covers ownership, session invalidation, pricing tampering, quotes, idempotency, last-item concurrency, cancellation reasons/restocking, seller approval, image spoofing, demo failure/success, invoices, responsive layouts, help focus/viewport bounds, upload controls, blocked browser storage, purchase continuation, persisted-cart validation, and admin pagination/filters. Tests reuse the manager session so unrelated cases do not exhaust production login limits. Screenshots are saved in ignored `artifacts/` and failures in `test-results/`.
+Playwright generates temporary credentials and uses a separate SQLite database; it does not use the local prototype database. The suite covers authentication and ownership, seller review/uploads, server-priced checkout, idempotency, inventory concurrency, cancellations, invoices, generated catalog assets, responsive layouts, themes and admin flows. CI also runs the production dependency audit. Local screenshots and failure traces are ignored under `artifacts/`, `test-results/` and `playwright-report/`.
 
-## Hosting and launch boundaries
+## Hosting requirements
 
-This is a **working prototype**, not an approval to collect live payments or launch a public commercial marketplace. SQLite and uploaded images currently require one Node server with a persistent volume for `prisma/prototype.db` and `public/uploads/`. An ephemeral/serverless filesystem will lose data. Back up both together; migrate to managed Postgres and object storage before horizontal scaling.
+The current SQLite database and uploaded images require **one Node.js server with persistent storage** for `prisma/prototype.db` and `public/uploads/`. Back up both together. The hosting configuration does not provision that storage; ephemeral or serverless filesystems are unsuitable for persisted marketplace data. Move to managed database and object storage before horizontal scaling.
 
-Set a strong JWT_SECRET and the correct public HTTPS APP_URL in hosting. Production cookies use Secure, HttpOnly and SameSite=Lax. API writes reject cross-origin requests, authorization is checked against current database role/status, and sensitive routes use database-backed rate limits. A trusted reverse proxy should enforce request-body and upload limits before requests reach Node.
+Use HTTPS, a strong signing secret and the correct `APP_URL` in hosting. Cookies are secure in production, write APIs reject cross-origin requests, and current database authorization and rate limits are enforced. A reverse proxy should enforce request-size limits.
 
-Before any live rollout: connect a real gateway with verified webhooks and seller payouts, courier integration, verified email/password recovery, privacy/returns policies, seller identity/dispute handling, monitoring/backups, an external abuse limiter, and a dependency audit. Existing credentials or personal data from earlier Git history need rotation/removal through the repository owner's process; deleting current files does not erase history. This change deliberately does not rewrite history.
-
-See [implementation and review notes](docs/marketplace-upgrade.md) for scope and validation results.
+A public commercial launch still needs real payment/webhook and seller-payout integration, courier and email services, account recovery/verification, privacy/returns policies, identity/dispute handling, monitoring and backups. The prototype does not claim those services are connected.

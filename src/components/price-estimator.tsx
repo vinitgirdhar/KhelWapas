@@ -9,7 +9,7 @@ import { z } from 'zod';
 import {
   estimateResalePrice,
   type EstimateResalePriceOutput,
-} from '@/ai/flows/estimate-resale-price';
+} from '@/server/pricing/estimate-resale-price';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -39,7 +39,6 @@ const formSchema = z.object({
   equipmentConditionDescription: z
     .string()
     .min(10, 'Please provide a more detailed description.').max(2000),
-  pastSalesData: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -56,7 +55,6 @@ export default function PriceEstimator() {
       equipmentType: '',
       equipmentAge: 0,
       equipmentConditionDescription: '',
-      pastSalesData: 'Not available',
     },
   });
 
@@ -65,7 +63,7 @@ export default function PriceEstimator() {
     setResult(null);
     setError(null);
     try {
-      const estimation = await estimateResalePrice({ ...values, pastSalesData: values.pastSalesData || '' });
+      const estimation = await estimateResalePrice(values);
       setResult(estimation);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unexpected error occurred. Please try again.');

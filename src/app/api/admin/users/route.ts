@@ -1,9 +1,9 @@
-import { pagination, apiError } from '@/lib/api';
+import { pagination, apiError } from '@/server/api';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
 
 export async function GET(request: NextRequest) {
   try {

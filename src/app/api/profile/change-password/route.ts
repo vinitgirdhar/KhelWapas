@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser, verifyPassword, hashPassword, generateToken, setAuthCookie } from '@/lib/auth';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser, verifyPassword, hashPassword, generateToken, setAuthCookie } from '@/server/auth';
+import { apiError, ApiError } from '@/server/api';
 import { passwordSchema } from '@/lib/validation';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/server/rate-limit';
 export async function POST(request: NextRequest) {
   try {
     const claims = await requireUser(request);

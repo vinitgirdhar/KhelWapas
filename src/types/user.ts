@@ -27,37 +27,6 @@ export interface Address {
   updatedAt?: string;
 }
 
-export interface PaymentMethod {
-  id: string;
-  userId: string;
-  type: 'card' | 'upi' | 'netbanking' | 'wallet';
-  // For cards
-  cardLast4?: string;
-  cardType?: 'visa' | 'mastercard' | 'rupay' | 'amex';
-  cardHolder?: string;
-  expiryMonth?: number;
-  expiryYear?: number;
-  // For UPI
-  upiId?: string;
-  // Common fields
-  nickname?: string;
-  isDefault: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ProfileFormData {
-  fullName: string;
-  email: string;
-  phone?: string;
-}
-
-export interface PasswordChangeData {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
-
 export interface Order {
   id: string;
   orderId: string;
@@ -88,24 +57,6 @@ export interface Order {
     price: number;
     image: string;
   }>;
-}
-
-export interface PickupExecutive {
-  id: string;
-  name: string;
-  phone: string;
-  area: string;
-  rating: number;
-  isAvailable: boolean;
-}
-
-export interface ScheduledPickup {
-  id: string;
-  orderId: string;
-  executiveId: string;
-  scheduledDate: string;
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
-  executive?: PickupExecutive;
 }
 
 export interface SellRequest {

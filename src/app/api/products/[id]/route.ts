@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
 import { productUpdateSchema } from '@/lib/validation';
-import { serializeProduct } from '@/lib/products';
-import { apiError, ApiError } from '@/lib/api';
+import { serializeProduct } from '@/server/marketplace/products';
+import { apiError, ApiError } from '@/server/api';
 type Context = { params: Promise<{ id: string }> };
 export async function GET(_: NextRequest, { params }: Context) {
   try {

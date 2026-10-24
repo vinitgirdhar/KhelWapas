@@ -1,8 +1,7 @@
-import type { SVGProps } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
-export function KhelwapasLogo({ className, ...props }: SVGProps<SVGSVGElement> & { className?: string }) {
+export function KhelwapasLogo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <Image 

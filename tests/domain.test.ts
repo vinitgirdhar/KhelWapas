@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkoutFingerprint, checkoutSchema, transitions } from '../src/lib/orders';
-import { pagination } from '../src/lib/api';
-import { verifyToken, generateToken } from '../src/lib/auth';
+import { checkoutFingerprint, checkoutSchema, transitions } from '@/server/marketplace/orders';
+import { pagination } from '@/server/api';
+import { verifyToken, generateToken } from '@/server/auth';
 import { safeReturnPath } from '../src/lib/navigation';
 import { normalizeCart } from '../src/lib/cart';
 const base = { items: [{ productId: 'a', quantity: 1 }, { productId: 'b', quantity: 2 }], addressId: 'home', outcome: 'success' as const, expectedTotal: 200 };

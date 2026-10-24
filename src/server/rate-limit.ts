@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
-import { prisma } from './prisma';
-import { ApiError } from './api';
+import { prisma } from '@/server/db';
+import { ApiError } from '@/server/api';
 /** Database-backed limits work across app processes sharing the same database. */
 export async function rateLimit(scope: string, identity: string, maximum: number, windowMs = 900000) {
   const now = Date.now(), bucket = Math.floor(now / windowMs);

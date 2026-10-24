@@ -1,5 +1,5 @@
 import type { Product } from '@prisma/client';
-import { normalizeMany } from './image';
+import { normalizeMany } from '../../lib/image';
 export function serializeProduct(p: Product) {
   const images = Array.isArray(p.imageUrls) ? normalizeMany(p.imageUrls.filter((v): v is string => typeof v === 'string')) : [];
   const demoSku = p.badge === 'Demo listing' && p.specs && typeof p.specs === 'object' && !Array.isArray(p.specs) ? p.specs.SKU : undefined;

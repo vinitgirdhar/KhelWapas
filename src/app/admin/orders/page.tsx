@@ -43,7 +43,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { type Order } from '@/types/user';
 import { format } from 'date-fns';
-import Link from 'next/link';
 import jsPDF from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 import type { UserOptions } from 'jspdf-autotable';

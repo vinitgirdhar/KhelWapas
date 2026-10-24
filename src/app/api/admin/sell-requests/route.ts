@@ -1,7 +1,7 @@
-import { pagination, apiError } from '@/lib/api';
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
+import { pagination, apiError } from '@/server/api';
+import { NextRequest,NextResponse } from 'next/server';
+import { prisma } from '@/server/db';
+import { getCurrentUser } from '@/server/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Pagination support
     const { searchParams } = new URL(request.url)
-    const { page, limit, skip } = pagination(searchParams, 50)
+    const { limit, skip } = pagination(searchParams, 50)
 
     // Get all sell requests with user information
     const sellRequests = await prisma.sellRequest.findMany({

@@ -1,9 +1,9 @@
 'use server';
 import { z } from 'zod';
-import { getCurrentUser } from '@/lib/auth';
-import { rateLimit } from '@/lib/rate-limit';
-import { prisma } from '@/lib/prisma';
-const inputSchema = z.object({ equipmentType: z.string().trim().min(2).max(100), equipmentGrade: z.enum(['A','B','C','D']), equipmentAge: z.number().min(0).max(50), equipmentConditionDescription: z.string().max(2000), pastSalesData: z.string().max(3000) });
+import { getCurrentUser } from '@/server/auth';
+import { rateLimit } from '@/server/rate-limit';
+import { prisma } from '@/server/db';
+const inputSchema = z.object({ equipmentType: z.string().trim().min(2).max(100), equipmentGrade: z.enum(['A','B','C','D']), equipmentAge: z.number().min(0).max(50), equipmentConditionDescription: z.string().max(2000) });
 export type EstimateResalePriceInput = z.infer<typeof inputSchema>;
 export type EstimateResalePriceOutput = { estimatedPrice: number; confidenceLevel: string; reasoning: string };
 export async function estimateResalePrice(input: EstimateResalePriceInput): Promise<EstimateResalePriceOutput> {

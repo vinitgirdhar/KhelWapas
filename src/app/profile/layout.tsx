@@ -9,7 +9,6 @@ import { User, ShoppingBag, MapPin, CreditCard, LogOut } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 
 const sidebarNavItems = [
   {
@@ -46,7 +45,6 @@ export default function ProfileLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { toast } = useToast();
 
   const { isLoggedIn, loading, logout: handleLogout } = useAuth();
   useEffect(() => { if (!loading && !isLoggedIn) router.replace('/login?redirect=' + encodeURIComponent(pathname)); }, [loading, isLoggedIn, router, pathname]);

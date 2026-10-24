@@ -1,1 +1,1 @@
-export { default } from '@/components/profile/enhanced-orders-page';
+export { default } from '@/components/profile/orders-page';

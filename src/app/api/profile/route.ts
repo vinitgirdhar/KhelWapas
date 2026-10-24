@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError } from '@/server/api';
 import { emailSchema, imageUrl } from '@/lib/validation';
 const select = { id: true, fullName: true, email: true, phone: true, profilePicture: true, role: true, createdAt: true, updatedAt: true };
 export async function GET(request: NextRequest) {

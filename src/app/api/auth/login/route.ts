@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { verifyPassword, generateToken, setAuthCookie } from '@/lib/auth';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { verifyPassword, generateToken, setAuthCookie } from '@/server/auth';
+import { apiError, ApiError } from '@/server/api';
 import { emailSchema } from '@/lib/validation';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/server/rate-limit';
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = z.object({ email: emailSchema, password: z.string().min(1).max(72) }).parse(await request.json());

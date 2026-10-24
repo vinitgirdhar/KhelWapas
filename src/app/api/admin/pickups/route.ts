@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { requireUser } from '@/lib/auth';
-import { apiError, ApiError } from '@/lib/api';
+import { prisma } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { apiError, ApiError } from '@/server/api';
 export async function GET(request: NextRequest) {
   try { await requireUser(request, true); return NextResponse.json({ success: true, pickups: await prisma.pickup.findMany({ orderBy: { scheduledAt: 'desc' }, take: 100 }) }); } catch(e) { return apiError(e); }
 }
