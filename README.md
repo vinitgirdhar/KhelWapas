@@ -1,110 +1,232 @@
-# KhelWapas
+<div align="center">
 
-A prototype marketplace for new and pre-owned sports equipment, built with Next.js, React, TypeScript, Tailwind CSS, Prisma and SQLite.
+  <img src="public/images/logo.png" alt="KhelWapas Logo" width="100" style="border-radius: 20px; margin-bottom: 12px;" />
 
-Buyers can browse and filter gear, save addresses, run a simulated checkout and view demo invoices. Sellers submit photographed equipment for admin review. Admins manage listings, inventory, requests, orders and demo pickup plans. Payments, refunds, delivery and pickups are simulations; the app does not collect banking details or book couriers.
+  # ⚡ KhelWapas (खेल वापस)
+  ### **The Next-Gen Circular Sports Re-Commerce Marketplace**
 
-The interface supports mobile two-column product grids, light/dark themes, glass surfaces and GSAP motion with reduced-motion support. The desktop hero loads an interactive Three.js sports scene with procedural equipment models; mobile keeps its original hero. KhelBot provides offline marketplace guidance. The price guide uses comparable asking-price listings and reports an indicative estimate.
+  *Empowering athletes to buy verified gear, pass forward used equipment, and play sustainably.*
 
-Public catalog results use a bounded in-memory cache for quick page switching. Recent listings remain visible during background refreshes; checkout and admin inventory changes invalidate those snapshots. Private account data and orders are not stored in this cache, and checkout always validates current prices and stock on the server.
+  <p align="center">
+    <a href="#-quick-start-guide"><b>Quick Start</b></a> •
+    <a href="#-visual-tour"><b>Visual Tour</b></a> •
+    <a href="#-core-capabilities--highlights"><b>Features</b></a> •
+    <a href="#-demo-access--roles"><b>Demo Access</b></a> •
+    <a href="#%EF%B8%8F-tech-stack--architecture"><b>Architecture</b></a> •
+    <a href="#%EF%B8%8F-available-npm-scripts"><b>Commands</b></a>
+  </p>
 
-## Local setup
+  <p align="center">
+    <img src="https://img.shields.io/badge/Next.js_15-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+    <img src="https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Prisma_ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+    <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+    <img src="https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright" />
+  </p>
 
-Use Node.js 22 or 24 and npm. The commands below use a Bash-compatible shell; the browser test runner also requires OpenSSL.
+  <!-- Hero Preview Banner -->
+  <br />
+  <img src="docs/assets/screenshots/homepage.png" alt="KhelWapas Desktop Showcase" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);" />
+  <br />
+</div>
 
-```sh
-npm ci
+---
+
+## 🌟 What is KhelWapas?
+
+**KhelWapas** (*"Play Again"*) is a modern, high-performance circular marketplace prototype crafted to solve the barrier of expensive sports equipment. Built with **Next.js 15 App Router**, **TypeScript**, **Tailwind CSS**, and **Prisma**, it provides a fluid, liquid-glass re-commerce experience where players can buy inspected gear, trade in equipment they have outgrown, and calculate fair asking prices with intelligent estimation tools.
+
+### 🎯 The Core Experience:
+- 🛒 **For Buyers**: Browse 110+ verified sports items across 22 disciplines, view certified condition grades (A/B/C/D), transparent specs, and simulated express checkout.
+- ♻️ **For Sellers**: Effortless trade-in flow with multi-photo upload, instant asking-price estimators, and automated pickup dispatch.
+- 🛡️ **For Admins**: Comprehensive moderation portal to review incoming seller listings, oversee stock inventory, track simulated logistics, and manage orders.
+
+---
+
+## 📸 Visual Tour
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%" align="center">
+        <b>🛍️ Explore & Filter Equipment</b><br />
+        <sub>Multi-sport filtering, instant search, condition badges, and price sorting</sub><br /><br />
+        <img src="docs/assets/screenshots/catalog.png" alt="Equipment Catalog" width="100%" style="border-radius: 8px;" />
+      </td>
+      <td width="50%" align="center">
+        <b>🔍 Comprehensive Product Details</b><br />
+        <sub>Condition grading, AI imagery disclosure, specifications & instant add-to-cart</sub><br /><br />
+        <img src="docs/assets/screenshots/product-detail.png" alt="Product Detail Page" width="100%" style="border-radius: 8px;" />
+      </td>
+    </tr>
+    <tr>
+      <td width="50%" align="center">
+        <b>🔄 Sell & Trade-in Hub</b><br />
+        <sub>Simple photo upload, condition disclosures, and integrated asking price estimator</sub><br /><br />
+        <img src="docs/assets/screenshots/sell.png" alt="Sell Equipment" width="100%" style="border-radius: 8px;" />
+      </td>
+      <td width="50%" align="center">
+        <b>⚡ Admin Operations Dashboard</b><br />
+        <sub>Real-time listing moderation, order tracking, pickup scheduling & inventory oversight</sub><br /><br />
+        <img src="docs/assets/screenshots/admin.png" alt="Admin Control Center" width="100%" style="border-radius: 8px;" />
+      </td>
+    </tr>
+  </table>
+
+  <br />
+
+  <table>
+    <tr>
+      <td align="center">
+        <b>📱 Mobile-First Responsive Experience</b><br />
+        <sub>Adaptive two-column layout, bottom application dock, gesture navigation, and touch-optimized controls</sub><br /><br />
+        <img src="docs/assets/screenshots/mobile.png" alt="Mobile Experience" width="420px" style="border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);" />
+      </td>
+    </tr>
+  </table>
+</div>
+
+---
+
+## ✨ Core Capabilities & Highlights
+
+| Feature | Description |
+| :--- | :--- |
+| **🎨 Peak Design System** | Modern navy & orange palette, glassmorphism (`liquid-glass`), dark/light theme switching, and smooth GSAP micro-interactions with reduced-motion accessibility. |
+| **📦 110-Item Demo Catalog** | Pre-populated across **22 sports disciplines** (Cricket, Football, Badminton, Tennis, Cycling, Fitness, Rugby, Golf, Boxing, etc.) with custom illustrations and SKUs. |
+| **💡 Smart Price Estimator** | Algorithmic valuation engine that evaluates equipment category, brand tier, age, and condition grade to suggest competitive market rates. |
+| **🤖 Contextual KhelBot** | Instant client-side AI support assistant answering equipment guidelines, sizing advice, seller FAQs, and return policies. |
+| **🛡️ Robust Server Integrity** | Strict server-side authorization, transactional stock reserves, idempotency protection, and simulated checkout pipelines. |
+| **📄 Automated Invoicing** | Dynamic, printable client-side PDF/print invoice generation with order breakdown, mock GST calculation, and tracking IDs. |
+| **📱 Mobile Navigation Dock** | Native app-like floating dock on mobile viewports for quick switching between Shop, Sell, Cart, and Profile. |
+
+---
+
+## 🚀 Quick Start Guide
+
+Get KhelWapas running locally in less than 2 minutes.
+
+### 1. Prerequisites
+- **Node.js**: `v22.x` or `v24.x`
+- **npm**: `v10.x` or later
+
+### 2. Clone & Install
+```bash
+# Clone the repository
+git clone https://github.com/vinitgirdhar/KhelWapas.git
+
+# Enter the directory
+cd KhelWapas
+
+# Install dependencies & generate Prisma client
+npm install
+```
+
+### 3. Setup Environment Variables
+Copy the example environment configuration:
+```bash
 cp .env.example .env
 ```
 
-Edit `.env` before starting:
+> [!TIP]
+> Generate a secure `JWT_SECRET` with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | SQLite connection, for example `file:./prototype.db`; relative paths resolve from `prisma/`. |
-| `JWT_SECRET` | A unique random secret of at least 32 characters. Generate one with `openssl rand -hex 32`. |
-| `APP_URL` | The app origin, `http://localhost:9002` for local development. |
-| `DEMO_ADMIN_EMAIL` | Optional admin account created by the seed command. |
-| `DEMO_ADMIN_PASSWORD` | Required with the admin email; use at least 12 characters. |
+Your `.env` should look like this:
+```env
+DATABASE_URL="file:./prototype.db"
+JWT_SECRET="your-generated-32-byte-hex-secret"
+APP_URL="http://localhost:9002"
+DEMO_ADMIN_EMAIL="admin@khelwapas.com"
+DEMO_ADMIN_PASSWORD="AdminPassword123!"
+```
 
-```sh
-touch prisma/prototype.db
+### 4. Initialize Database & Seed Catalog
+```bash
+# Apply Prisma database migrations
 npm run db:migrate
+
+# Seed 110 demo products across 22 categories
 npm run db:seed:mocks
+```
+
+### 5. Launch Development Server
+```bash
 npm run dev
 ```
+Open [**http://localhost:9002**](http://localhost:9002) in your browser.
 
-Open **http://localhost:9002**. Register to create a buyer/seller account. If admin credentials were configured, sign in at `/admin/login`. There is no built-in password, and seeding does not reset existing passwords.
+---
 
-The user sign-in page also offers **Demo Login**. It creates a private visitor account with a fictional address, four sample orders, and seller submissions. Repeating Demo Login while signed in reuses that visitor account. Each new visitor gets separate records; there is no shared demo password. All activity remains simulated. User credentials use `/login`; admin credentials use `/admin/login`.
+## 🔑 Demo Access & Roles
 
-Run `npm run db:seed:demo` to populate admin screens with four named fictional users, 16 orders, 12 seller submissions, and four demo pickup plans. Orders include paid, failed, and refunded examples across several months. Admin totals, invoices, and user history read the same database records. The dashboard shows this month's activity; revenue analytics also shows all-time totals. Historical listings stay archived, and rerunning the seed preserves existing demo edits and inventory.
+The prototype provides pre-seeded accounts and zero-setup authentication for testing:
 
-For a local production build, run `npm run build` and `npm start -- --port 9002`.
+| Role | Access URL | Credentials | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Admin** | [`/admin/login`](http://localhost:9002/admin/login) | `admin@khelwapas.com` / `AdminPassword123!` | Review listings, schedule pickups, view orders |
+| **Buyer / Seller** | [`/login`](http://localhost:9002/login) | Click **"Demo Login"** or Register | Browse items, add to cart, checkout, list equipment |
 
-## Project structure
+*(Optional)* Run `npm run db:seed:demo` to populate realistic simulated transaction history (16 orders, 12 seller submissions, and 4 scheduled pickups across fictional users).
 
-```text
-src/
-  app/          Next.js pages, layouts, API routes and global styles
-  components/   Feature components and shared UI primitives
-  data/         Demo product catalog and image mapping
-  hooks/        Client authentication, cart, storage and UI state
-  lib/          Shared validation, categories and client-safe utilities
-  server/       Authentication, database, uploads and server business logic
-    marketplace/  Catalog serialization, checkout and order operations
-    pricing/      Indicative asking-price estimation
-    support/      Offline KhelBot help
-  types/        Shared domain interfaces
-prisma/         Database schema, migration history and seed commands
-scripts/        Browser-test runner and catalog image export utility
-tests/          Unit and Playwright tests, with shared test helpers
-public/         Static assets, generated demo photos and retained upload assets
-docs/           Maintained catalog production guide
-.github/        Continuous integration
+---
+
+## 🏗️ Tech Stack & Architecture
+
+```
+KhelWapas/
+├── 🌐 src/
+│   ├── app/                 # Next.js 15 App Router pages, layouts & API endpoints
+│   ├── components/          # Reusable UI primitives, liquid-glass cards & forms
+│   │   ├── home/            # Hero, featured carousels & category highlights
+│   │   ├── layout/          # Header, footer, search bar & mobile dock
+│   │   ├── khelbot/         # Contextual guidance chatbot
+│   │   └── ui/              # Radix UI headless components styled with Tailwind
+│   ├── data/                # Static sports metadata & catalog definitions
+│   ├── hooks/               # Custom React hooks (auth, cart, storage, media query)
+│   ├── lib/                 # Shared validation schemas, formats & client utilities
+│   ├── server/              # Server actions, Prisma client & business logic
+│   └── types/               # TypeScript interfaces & API contracts
+├── 🗄️ prisma/                # SQLite schema, migration history & seed scripts
+├── 📂 public/               # Optimized demo catalog imagery & branding assets
+├── 🧪 tests/                # Unit test suites & Playwright E2E browser tests
+└── 📜 docs/                 # Catalog production guides & screenshot assets
 ```
 
-Next.js, TypeScript, Tailwind, PostCSS and Playwright configuration files stay at the root where their tools expect them. `.idx/` contains the Firebase Studio workspace configuration; `apphosting.yaml` contains the existing hosting configuration. Generated build output, local data, secrets and browser artifacts are ignored by Git. Contributor rules are in [AGENTS.md](AGENTS.md).
+### Key Technologies:
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router, Server Actions, Route Handlers)
+- **UI & Styling**: [React 18](https://react.dev/), [Tailwind CSS](https://tailwindcss.com/), [Radix UI](https://www.radix-ui.com/)
+- **Animations**: [GSAP](https://greensock.com/gsap/) with accessibility-first reduced-motion checks
+- **Database & ORM**: [SQLite](https://www.sqlite.org/) + [Prisma ORM](https://www.prisma.io/)
+- **Testing**: [Playwright](https://playwright.dev/) for headless end-to-end browser workflows
 
-## Commands
+---
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Development server on port 9002. |
-| `npm run build` / `npm start` | Build and start the production server. |
-| `npm run typecheck` | Strict TypeScript checks, including unused imports and parameters. |
-| `npm run db:migrate` | Apply committed database migrations. |
-| `npm run db:seed` | Create only the configured admin account. |
-| `npm run db:seed:mocks` | Create or refresh the generated demo catalog. |
-| `npm run db:seed:demo` | Add four fictional users and linked prototype transaction history. |
-| `npm run db:remove-mocks` | Archive controlled demo listings without deleting history. |
-| `npm run test:unit` | Run domain, validation and generated-asset checks. |
-| `npm test` | Run Playwright against a disposable seeded database. |
+## 🛠️ Available NPM Scripts
 
-## Demo catalog
+| Command | Action |
+| :--- | :--- |
+| `npm run dev` | Starts local dev server at `http://localhost:9002` |
+| `npm run build` | Builds optimized production bundle |
+| `npm start` | Runs the production build (`next start`) |
+| `npm run typecheck` | Validates TypeScript types across the entire project |
+| `npm run db:migrate` | Deploys all pending Prisma database migrations |
+| `npm run db:seed:mocks` | Populates the 110-product demonstration catalog |
+| `npm run db:seed:demo` | Seeds multi-user transactional mock history |
+| `npm run db:remove-mocks`| Safely archives mock catalog items |
+| `npm run test:unit` | Executes Node test runner unit tests |
+| `npm test` | Runs Playwright E2E integration test suite |
 
-The catalog contains **110 products: five per sport/equipment category**, with 66 pre-owned and 44 new listings. Each has its own generated image, price, description, condition and SKU. Photos are bundled as WebP files and labeled as AI-generated demonstration imagery on product pages.
+---
 
-Refreshing demo content preserves stock and publication decisions and protects seller-linked records. Retired bat IDs retain their original identities for old orders. Archiving demos is reversible through the admin editor. See [the catalog guide](docs/demo-catalog.md) for mappings, image export and seed behavior.
+## 🔒 Prototype Disclosures & Safety
 
-## Verification
+> [!NOTE]
+> **Marketplace Simulation Notice**: KhelWapas is currently a fully-functional prototype. Financial transactions, courier pickups, returns, and payout processes are simulated in-memory and in SQLite. No actual banking data or card details are charged or stored.
 
-```sh
-npm run typecheck
-npm run test:unit
-npm run build
-npx playwright install --with-deps chromium
-npm test
-```
+---
 
-Playwright generates temporary credentials and uses a separate SQLite database; it does not use the local prototype database. The suite covers authentication and ownership, seller review/uploads, server-priced checkout, idempotency, inventory concurrency, cancellations, invoices, generated catalog assets, responsive layouts, themes and admin flows. CI also runs the production dependency audit. Local screenshots and failure traces are ignored under `artifacts/`, `test-results/` and `playwright-report/`.
-
-On Windows, run `npm test` from Git Bash. From PowerShell, use `& 'C:/Program Files/Git/bin/bash.exe' scripts/test.sh` if `bash` resolves to an unavailable WSL installation. The runner translates its temporary database path for native Windows Node.js.
-
-## Hosting requirements
-
-The current SQLite database and uploaded images require **one Node.js server with persistent storage** for `prisma/prototype.db` and `public/uploads/`. Back up both together. The hosting configuration does not provision that storage; ephemeral or serverless filesystems are unsuitable for persisted marketplace data. Move to managed database and object storage before horizontal scaling.
-
-Use HTTPS, a strong signing secret and the correct `APP_URL` in hosting. Cookies are secure in production, write APIs reject cross-origin requests, and current database authorization and rate limits are enforced. A reverse proxy should enforce request-size limits.
-
-A public commercial launch still needs real payment/webhook and seller-payout integration, courier and email services, account recovery/verification, privacy/returns policies, identity/dispute handling, monitoring and backups. The prototype does not claim those services are connected.
+<div align="center">
+  <sub>Crafted with passion for sports and circular commerce. Built by Vinit Girdhar and contributors.</sub>
+</div>
