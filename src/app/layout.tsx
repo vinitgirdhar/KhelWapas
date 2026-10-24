@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/hooks/use-auth';
 import { CartProvider } from '@/hooks/use-cart';
 import AppShell from '@/components/layout/app-shell';
+import { ThemeProvider } from '@/components/layout/theme-provider';
+import { themeBootstrap } from '@/lib/theme';
 
 export default function RootLayout({
   children,
@@ -16,6 +18,7 @@ export default function RootLayout({
 
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
         <title>KHELWAPAS - Marketplace for New & Pre-Owned Sports Gear</title>
         <meta
           name="description"
@@ -27,11 +30,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/logo.png" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
-        <AuthProvider>
+        <ThemeProvider><AuthProvider>
           <CartProvider>
             <AppShell>{children}</AppShell>
           </CartProvider>
-        </AuthProvider>
+        </AuthProvider></ThemeProvider>
       </body>
     </html>
   );

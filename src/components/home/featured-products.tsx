@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import ProductCard, { type Product } from '@/components/product-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,7 +60,7 @@ export default function FeaturedProducts() {
   useEffect(() => {
     if (!mounted) return;
     
-    setFilteredProducts(activeCategory === 'All' ? allProducts.slice(0, 8) : allProducts.filter(p => p.category === activeCategory).slice(0,8));
+    setFilteredProducts(activeCategory === 'All' ? allProducts.slice(0, 4) : allProducts.filter(p => p.category === activeCategory).slice(0,4));
   }, [activeCategory, allProducts, mounted]);
   
 
@@ -93,9 +95,9 @@ export default function FeaturedProducts() {
         </div>
         {error && <p role="alert" className="mb-6 text-center text-destructive">{error}</p>}
         {!loading && !error && !filteredProducts.length && <p className="py-10 text-center text-muted-foreground">Fresh gear is on its way. Try another sport or list your own.</p>}
-        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="product-grid grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {!mounted || loading
-            ? Array.from({ length: 6 }).map((_, i) => (
+            ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex flex-col gap-4">
                   <Skeleton className="h-64 w-full" />
                   <Skeleton className="h-6 w-3/4" />
@@ -106,6 +108,7 @@ export default function FeaturedProducts() {
                 <ProductCard key={product.id} product={product} />
               ))}
         </div>
+        <div className="mt-8 text-center"><Button asChild variant="outline" className="rounded-full"><Link href="/shop/preowned">Explore pre-owned gear <ArrowUpRight /></Link></Button></div>
       </div>
     </section>
   );

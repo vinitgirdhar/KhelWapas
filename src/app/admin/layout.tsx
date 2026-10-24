@@ -74,7 +74,7 @@ export default function AdminLayout({
           </aside>
         </TooltipProvider>
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 w-full">
-          <nav aria-label="Admin mobile navigation" className="flex gap-2 overflow-x-auto border-b bg-white p-3 sm:hidden">{navItems.map(item => <Link key={item.href} href={item.href} className={cn("shrink-0 rounded-full px-3 py-2 text-sm", pathname === item.href && "bg-primary text-white")}>{item.label}</Link>)}</nav>
+          <nav aria-label="Admin mobile navigation" className="flex gap-2 overflow-x-auto border-b bg-card p-3 sm:hidden">{navItems.map(item => <Link key={item.href} href={item.href} className={cn("shrink-0 rounded-full px-3 py-2 text-sm", pathname === item.href && "bg-primary text-primary-foreground")}>{item.label}</Link>)}</nav>
           {children}
         </div>
       </div>

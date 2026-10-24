@@ -27,10 +27,20 @@ Run one Node instance with persistent SQLite and upload storage. JSON totals are
 - TypeScript typecheck passed with build errors enabled.
 - Optimized production build passed on Next.js 15.5.28 / Node.js 24.
 - Five domain tests passed.
-- Fourteen distinct end-to-end checks passed. The final full run passed 13/14; the remaining check timed out on a cold dev-route compilation while a production build was running. After increasing the browser assertion timeout, its isolated rerun passed. No application failure remained.
+- Nineteen end-to-end checks passed in one full run, covering the marketplace and the five responsive layout/theme refinements.
 - A fresh database applied all nine migrations successfully during the test runs.
 - Production dependency audit: zero known vulnerabilities at verification time. Overrides select patched PostCSS, selector-parser and deepmerge versions; CLI generation/migrations and build were verified with these overrides.
 - Clean-install lockfile dry run and git whitespace checks passed.
 - Desktop (1440px), mobile (390px), and narrow two-column catalog (430px) layouts were checked; production screenshots are available in the local ignored artifacts directory.
-- Independent reviewer completed an initial audit and two targeted rechecks; the final recheck reported no remaining blockers in the identified fixes.
+- Independent review covered the initial marketplace and subsequent responsive/theme refinements. Identified layout and contrast gaps were fixed.
 
+
+## Responsive layout and theme refinements
+
+- Mobile featured gear uses a two-column, two-row selection. Catalog and related-product grids also keep two columns, with compact cards that fit 320–430px screens.
+- Footer link groups sit side by side under a shared brand block on mobile. Guest/landing views omit the application dock; it appears on signed-in shopping/account screens. The mobile menu retains a text link to the bag.
+- Light/dark themes use the original navy and orange identity, semantic surfaces, contrasting text, and dark glass. The first render follows the device or saved preference before paint. The header toggle persists the choice and synchronizes tabs.
+- Desktop motion adds gentle hero parallax, an ambient glow and pointer-responsive glass. Product cards animate as asynchronous results arrive. Media-query and route cleanup removes animations/listeners; reduced-motion users receive static content.
+- Added five browser checks covering responsive grid/footer geometry, authentication gating, theme/device/storage behavior, dark mobile controls and motion cleanup. An independent read-only review also checked theme hydration, navigation and contrast.
+
+Refinement verification: 19 browser tests and five domain tests passed; typecheck, production build and whitespace checks passed. Updated production screenshots cover light/dark layouts at 390px and 1440px.

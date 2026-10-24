@@ -1,6 +1,6 @@
 # KhelWapas
 
-A prototype marketplace for new and pre-owned sports equipment. The original navy/orange palette and logo are preserved, with glass navigation, Apple system fonts, responsive shopping pages, mobile navigation, and GSAP animation that respects reduced motion.
+A prototype marketplace for new and pre-owned sports equipment. The original navy/orange palette and logo are preserved, with glass navigation, Apple system fonts, responsive shopping pages, signed-in mobile navigation, and GSAP animation that respects reduced motion. Mobile products use two columns, with four featured items on the home page and paired footer navigation groups. A header toggle switches between light and dark themes; the initial theme follows the device and an explicit choice persists across visits and tabs.
 
 ## Run locally
 
