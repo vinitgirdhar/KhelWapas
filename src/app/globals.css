@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --brand-navy: 228 65% 32%;
+    --page-glow: 228 65% 97%;
     --background: 0 0% 100%;
     --foreground: 228 10% 15%;
     --card: 0 0% 100%;
@@ -15,9 +17,9 @@
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted-foreground: 228 9% 40%;
     --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 98%;
+    --accent-foreground: 228 45% 12%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
@@ -35,30 +37,33 @@
   }
 
   .dark {
-    --background: 228 10% 10%;
-    --foreground: 0 0% 98%;
-    --card: 228 10% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 228 10% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 228 65% 32%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 0 0% 6%;
+    --page-glow: 0 0% 11%;
+    --foreground: 0 0% 94%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 94%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 94%;
+    --primary: 25 95% 60%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 17%;
+    --secondary-foreground: 0 0% 94%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 25 95% 58%;
+    --accent-foreground: 0 0% 8%;
+    --destructive: 0 72% 56%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 25 95% 53%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --border: 0 0% 22%;
+    --input: 0 0% 26%;
+    --ring: 25 95% 60%;
+    --lg-bg-color: rgba(30, 30, 30, 0.5);
+    --lg-highlight: rgba(255, 255, 255, 0.13);
+    --chart-1: 25 95% 60%;
+    --chart-2: 160 60% 50%;
+    --chart-3: 40 80% 60%;
+    --chart-4: 280 65% 70%;
+    --chart-5: 340 75% 65%;
   }
 }
 
@@ -108,4 +113,65 @@
   /* Only the content should receive pointer events */
   pointer-events: auto;
   }
+}
+
+@layer base {
+  :root { --radius: 1rem; }
+  html { scroll-behavior: smooth; scroll-padding-top: 6rem; }
+  body { background-image: radial-gradient(ellipse at 90% 5%, hsl(var(--page-glow)), transparent 45%); }
+  ::selection { background: hsl(var(--accent) / .22); }
+  h1, h2, h3 { text-wrap: balance; }
+  input, textarea, select { font-size: max(16px, 1em); }
+  :focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 4px; }
+}
+@layer components {
+  .liquid-glass {
+    background: rgba(255,255,255,.88);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 8px 32px rgba(22,36,85,.06);
+  }
+  @supports (backdrop-filter: blur(20px)) {
+    .liquid-glass { background: rgba(255,255,255,.76); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); }
+  }
+  .marketplace-card { box-shadow: 0 5px 24px -12px hsl(var(--primary) / .16); }
+  .mobile-dock { position: fixed; bottom: max(.75rem, env(safe-area-inset-bottom)); left: .75rem; right: .75rem; z-index: 40; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: .25rem; padding: .4rem; border: 1px solid rgba(255,255,255,.9); border-radius: 1.75rem; }
+  .skip-link { position: fixed; top: .5rem; left: .5rem; z-index: 100; transform: translateY(-150%); border-radius: .75rem; padding: .75rem 1rem; background: hsl(var(--card)); color: hsl(var(--primary)); }
+  .skip-link:focus { transform: translateY(0); }
+}
+@media (min-width: 768px) { .mobile-dock { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+@layer components {
+  .dark .liquid-glass {
+    background: rgba(20, 20, 20, .92);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 8px 32px rgba(0, 0, 0, .2);
+    border-color: hsl(var(--border));
+  }
+  @supports (backdrop-filter: blur(20px)) {
+    .dark .liquid-glass { background: rgba(20, 20, 20, .72); }
+  }
+  .dark .marketplace-card { box-shadow: 0 10px 30px -16px rgba(0,0,0,.65); }
+  .product-grid > * { min-width: 0; }
+  .product-card:focus-within { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
+  .hero-glass { transform-style: preserve-3d; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .marketplace-card { transition: box-shadow .3s ease, border-color .3s ease; }
+  .glass-container:hover { border-color: hsl(var(--primary) / .25); }
+}
+@media print {
+  html.dark { color-scheme: light; --background: 0 0% 100%; --foreground: 0 0% 10%; --card: 0 0% 100%; --card-foreground: 0 0% 10%; --muted-foreground: 0 0% 35%; --border: 0 0% 85%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  body, header, footer { transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+}
+@layer components {
+  .dark .hero-glass {
+    background: rgba(24, 24, 24, .45);
+    border-color: rgba(255, 255, 255, .16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 20px 50px rgba(0,0,0,.25);
+  }
+  .dark .hero-orb { background: rgba(249, 115, 22, .09); }
 }

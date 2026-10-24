@@ -1,67 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-// GET /api/profile/addresses - Get user addresses
+import { requireUser } from '@/lib/auth';
+import { apiError, ApiError } from '@/lib/api';
+import { addressSchema } from '@/lib/validation';
 export async function GET(request: NextRequest) {
-  try {
-    const userId = request.nextUrl.searchParams.get('userId');
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
-
-    const addresses = await prisma.address.findMany({
-      where: { userId },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      take: 20, // Limit to 20 addresses per user
-    });
-
-    return NextResponse.json(addresses);
-  } catch (error) {
-    console.error('Error fetching addresses:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  try { const user = await requireUser(request); return NextResponse.json(await prisma.address.findMany({ where: { userId: user.userId }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }], take: 20 })); } catch (e) { return apiError(e); }
 }
-
-// POST /api/profile/addresses - Create new address
 export async function POST(request: NextRequest) {
   try {
-    const addressData = await request.json();
-    const { userId, title, fullName, phone, street, city, state, postalCode, country = 'India', isDefault } = addressData;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
-
-    // If this is set as default, unset all other default addresses for this user
-    if (isDefault) {
-      await prisma.address.updateMany({
-        where: { userId },
-        data: { isDefault: false },
-      });
-    }
-
-    const newAddress = await prisma.address.create({
-      data: {
-        userId,
-        title,
-        fullName,
-        phone,
-        street,
-        city,
-        state,
-        postalCode,
-        country,
-        isDefault,
-      },
+    const user = await requireUser(request), data = addressSchema.parse(await request.json());
+    const address = await prisma.$transaction(async tx => {
+      if (await tx.address.count({ where: { userId: user.userId } }) >= 20) throw new ApiError(400, 'Maximum 20 addresses');
+      if (data.isDefault) await tx.address.updateMany({ where: { userId: user.userId }, data: { isDefault: false } });
+      return tx.address.create({ data: { ...data, userId: user.userId } });
     });
-
-    return NextResponse.json(newAddress, { status: 201 });
-  } catch (error) {
-    console.error('Error creating address:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    return NextResponse.json(address, { status: 201 });
+  } catch (e) { return apiError(e); }
 }

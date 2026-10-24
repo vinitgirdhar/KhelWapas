@@ -23,6 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCart } from '@/hooks/use-cart';
 import { getPurchaseIntent, clearPurchaseIntent } from '@/lib/purchase-intent';
+import { useAuth } from '@/hooks/use-auth';
+import { safeReturnPath } from '@/lib/navigation';
 // Users will be authenticated via API
 
 const loginSchema = z.object({
@@ -38,6 +40,8 @@ function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addItem } = useCart();
+  const { login } = useAuth();
+  const redirect = safeReturnPath(searchParams.get('redirect'));
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -62,15 +66,7 @@ function LoginPageInner() {
       const result = await response.json();
 
       if (result.success) {
-        // Store user info in localStorage for frontend state
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userProfile', JSON.stringify({
-          fullName: result.user.fullName,
-          email: result.user.email,
-          role: result.user.role,
-        }));
-        
-        window.dispatchEvent(new Event('storage'));
+        await login();
 
         toast({
           title: 'Login Successful!',
@@ -82,7 +78,7 @@ function LoginPageInner() {
         if (intent) {
           try {
             if (intent.product && intent.quantity) {
-              addItem({ ...intent.product, quantity: intent.quantity });
+              addItem(intent.product, intent.quantity);
             }
           } catch {}
           clearPurchaseIntent();
@@ -97,8 +93,7 @@ function LoginPageInner() {
         }
 
         // Else follow redirect param or go home
-        const redirect = searchParams.get('redirect');
-        router.push(redirect ? decodeURIComponent(redirect) : '/');
+        router.push(redirect);
       } else {
         toast({
           variant: 'destructive',
@@ -144,7 +139,7 @@ function LoginPageInner() {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
+                      <Input type="email" autoComplete="email" placeholder="you@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -157,7 +152,7 @@ function LoginPageInner() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -171,13 +166,13 @@ function LoginPageInner() {
           </Form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <Link href="/register" className="font-semibold text-primary hover:underline">
+            <Link href={searchParams.get('redirect') ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'} className="font-semibold text-primary hover:underline">
               Register here
             </Link>
           </p>
           {searchParams.get('redirect') && (
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              <Link href={decodeURIComponent(searchParams.get('redirect') || '/')}>Cancel and go back</Link>
+              <Link href={redirect}>Cancel and go back</Link>
             </p>
           )}
         </CardContent>

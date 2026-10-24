@@ -1,153 +1,71 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/auth';
+import { apiError } from '@/lib/api';
+
+type SnapshotItem = { type?: string; quantity?: number };
+function itemsFromSnapshot(snapshot: Prisma.JsonValue): SnapshotItem[] {
+  try {
+    const value = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+    return Array.isArray(value) ? value.filter(item => item && typeof item === 'object') : [];
+  } catch { return []; }
+}
+function productType(item: SnapshotItem) {
+  if (item.type === 'preowned') return 'Pre-Owned';
+  if (item.type === 'new') return 'New Gear';
+  return 'Other / legacy';
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser(request)
-    
-    if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      )
-    }
-
-    // Get last 6 months of revenue data
-    const now = new Date()
-    const monthsData = []
-    
-    for (let i = 5; i >= 0; i--) {
-      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
-      
+    await requireUser(request, true);
+    const now = new Date();
+    const monthStart = (offset: number) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+    const revenueData = await Promise.all(Array.from({ length: 6 }, async (_, index) => {
+      const start = monthStart(index - 5), end = monthStart(index - 4);
       const revenue = await prisma.order.aggregate({
         _sum: { totalPrice: true },
-        where: {
-          paymentStatus: 'paid',
-          createdAt: { gte: monthStart, lte: monthEnd },
-        },
-      })
-      
-      monthsData.push({
-        month: monthStart.toLocaleString('en-US', { month: 'short' }),
-        revenue: Number(revenue._sum.totalPrice || 0),
-      })
-    }
-
-    // Get sales by product type (from orders' items) - limit to recent orders for performance
-    const allOrders = await prisma.order.findMany({
-      where: { paymentStatus: 'paid' },
-      select: { items: true },
-      take: 1000, // Limit to last 1000 paid orders for performance
-      orderBy: { createdAt: 'desc' }
-    })
-
-    const productTypeCounts = {
-      'Pre-Owned': 0,
-      'New Gear': 0,
-      'Refurbished': 0,
-    }
-
-    // Count product types from order items
-    for (const order of allOrders) {
-      const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
-      if (Array.isArray(items)) {
-        for (const item of items) {
-          // This is a simplification - you might want to fetch actual product type from products table
-          if (item.productName && item.productName.toLowerCase().includes('pre-owned')) {
-            productTypeCounts['Pre-Owned'] += item.quantity || 1
-          } else if (item.productName && item.productName.toLowerCase().includes('refurbished')) {
-            productTypeCounts['Refurbished'] += item.quantity || 1
-          } else {
-            productTypeCounts['New Gear'] += item.quantity || 1
-          }
-        }
+        where: { paymentStatus: 'paid', createdAt: { gte: start, lt: end } },
+      });
+      return { month: start.toLocaleString('en-IN', { month: 'short', timeZone: 'UTC' }), revenue: Number(revenue._sum.totalPrice || 0) };
+    }));
+    const [totals, newCustomers, recentOrders] = await Promise.all([
+      prisma.order.aggregate({ where: { paymentStatus: 'paid' }, _sum: { totalPrice: true }, _count: true }),
+      prisma.user.count({ where: { role: 'user', createdAt: { gte: monthStart(0) } } }),
+      prisma.order.findMany({
+        where: { paymentStatus: 'paid' }, take: 5, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        select: { id: true, items: true, totalPrice: true, createdAt: true, user: { select: { fullName: true } } },
+      }),
+    ]);
+    // Process every paid order in bounded batches. The previous 1,000-order cap
+    // silently made the all-time item total and type breakdown disagree with sales.
+    const counts: Record<string, number> = { 'Pre-Owned': 0, 'New Gear': 0, 'Other / legacy': 0 };
+    let cursor: string | undefined;
+    while (true) {
+      const batch: { id: string; items: Prisma.JsonValue }[] = await prisma.order.findMany({
+        where: { paymentStatus: 'paid' }, select: { id: true, items: true }, orderBy: { id: 'asc' }, take: 1000,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+      for (const order of batch) for (const item of itemsFromSnapshot(order.items)) {
+        if (Number.isInteger(item.quantity) && item.quantity! > 0) counts[productType(item)] += item.quantity!;
       }
+      if (batch.length < 1000) break;
+      cursor = batch[batch.length - 1].id;
     }
-
-    const salesTypeData = [
-      { name: 'Pre-Owned', value: productTypeCounts['Pre-Owned'], color: '#1E3A8A' },
-      { name: 'New Gear', value: productTypeCounts['New Gear'], color: '#F97316' },
-      { name: 'Refurbished', value: productTypeCounts['Refurbished'], color: '#10B981' },
-    ]
-
-    // Get recent sales (last 5 orders)
-    const recentOrders = await prisma.order.findMany({
-      where: { paymentStatus: 'paid' },
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        items: true,
-        totalPrice: true,
-        paymentStatus: true,
-        createdAt: true,
-        user: {
-          select: {
-            fullName: true,
-          },
-        },
-      },
-    })
-
+    const colors: Record<string, string> = { 'Pre-Owned': '#1E3A8A', 'New Gear': '#F97316', 'Other / legacy': '#737373' };
+    const salesTypeData = Object.entries(counts).map(([name, value]) => ({ name, value, color: colors[name] })).filter(item => item.value > 0);
     const recentSales = recentOrders.map(order => {
-      const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
-      const firstItem = Array.isArray(items) && items.length > 0 ? items[0] : {}
-      
+      const types = new Set(itemsFromSnapshot(order.items).map(productType));
       return {
-        id: `ORD-${order.id.substring(0, 3).toUpperCase()}`,
-        customer: order.user.fullName,
-        type: firstItem.productName?.toLowerCase().includes('pre-owned') ? 'Pre-Owned' : 'New Gear',
-        status: order.paymentStatus === 'paid' ? 'Paid' : 'Pending',
-        date: order.createdAt.toISOString().split('T')[0],
-        amount: Number(order.totalPrice),
-      }
-    })
-
-    // Calculate summary stats
-    const totalRevenue = await prisma.order.aggregate({
-      _sum: { totalPrice: true },
-      where: { paymentStatus: 'paid' },
-    })
-
-    const totalSales = await prisma.order.count({
-      where: { paymentStatus: 'paid' },
-    })
-
-    const newCustomers = await prisma.user.count({
-      where: {
-        role: 'user',
-        createdAt: {
-          gte: new Date(now.getFullYear(), now.getMonth(), 1),
-        },
-      },
-    })
-
-    const itemsSold = allOrders.reduce((sum, order) => {
-      const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items
-      return sum + (Array.isArray(items) ? items.reduce((s, i) => s + (i.quantity || 1), 0) : 0)
-    }, 0)
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        revenueData: monthsData,
-        salesTypeData,
-        recentSales,
-        summary: {
-          totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
-          totalSales,
-          newCustomers,
-          itemsSold,
-        },
-      },
-    })
-  } catch (error) {
-    console.error('Error fetching revenue data:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch revenue data' },
-      { status: 500 }
-    )
-  }
+        id: `ORD-${order.id.slice(0, 8).toUpperCase()}`, customer: order.user.fullName,
+        type: types.size > 1 ? 'Mixed gear' : [...types][0] || 'Other / legacy', status: 'Paid',
+        date: order.createdAt.toISOString().split('T')[0], amount: Number(order.totalPrice),
+      };
+    });
+    return NextResponse.json({ success: true, data: {
+      revenueData, salesTypeData, recentSales,
+      summary: { totalRevenue: Number(totals._sum.totalPrice || 0), totalSales: totals._count, newCustomers, itemsSold: Object.values(counts).reduce((sum, value) => sum + value, 0) },
+    } });
+  } catch (error) { return apiError(error); }
 }

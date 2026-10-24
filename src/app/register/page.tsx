@@ -20,11 +20,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { useCart } from '@/hooks/use-cart';
+import { getPurchaseIntent, clearPurchaseIntent } from '@/lib/purchase-intent';
+import { safeReturnPath } from '@/lib/navigation';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name is required.'),
   email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  password: z.string().min(8, 'Password must be at least 8 characters.').max(72),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -34,6 +38,9 @@ function RegisterPageInner() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
+  const { addItem } = useCart();
+  const redirect = safeReturnPath(searchParams.get('redirect'), '/profile');
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -64,9 +71,15 @@ function RegisterPageInner() {
           description: `Welcome to Khelwapas, ${result.user.fullName}!`,
         });
 
-        // Redirect user to the login page, preserving redirect
-        const redirect = searchParams.get('redirect');
-        router.push(redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login');
+        await login();
+        const intent = getPurchaseIntent();
+        if (intent) {
+          if (intent.product && intent.quantity) addItem(intent.product, intent.quantity);
+          clearPurchaseIntent();
+          router.push(intent.action === 'add' ? '/cart' : '/checkout');
+          return;
+        }
+        router.push(redirect);
       } else {
         toast({
           variant: 'destructive',
@@ -103,7 +116,7 @@ function RegisterPageInner() {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input autoComplete="name" placeholder="John Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,7 +129,7 @@ function RegisterPageInner() {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
+                      <Input type="email" autoComplete="email" placeholder="you@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -129,7 +142,7 @@ function RegisterPageInner() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" autoComplete="new-password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -143,7 +156,7 @@ function RegisterPageInner() {
           </Form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href={searchParams.get('redirect') ? `/login?redirect=${encodeURIComponent(searchParams.get('redirect') as string)}` : '/login'} className="font-semibold text-primary hover:underline">
+            <Link href={searchParams.get('redirect') ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'} className="font-semibold text-primary hover:underline">
               Log in here
             </Link>
           </p>

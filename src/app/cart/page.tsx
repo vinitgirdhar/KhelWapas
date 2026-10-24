@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/hooks/use-cart';
@@ -19,6 +20,7 @@ export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
@@ -49,7 +51,7 @@ export default function CartPage() {
   }
 
   const handleProceedToCheckout = () => {
-    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    const loggedIn = isLoggedIn;
     if (!loggedIn) {
       savePurchaseIntent({ action: 'checkout', createdAt: Date.now(), returnTo: '/cart' });
       toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
@@ -66,34 +68,34 @@ export default function CartPage() {
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
             <Card key={item.id}>
-              <CardContent className="p-4 flex gap-4 items-center">
+              <CardContent className="p-4 grid grid-cols-[64px_1fr_auto] gap-4 items-center sm:flex">
                 <Image
                   src={item.image}
                   alt={item.name}
                   width={100}
                   height={100}
-                  className="rounded-md object-cover"
+                  className="h-16 w-16 shrink-0 rounded-xl object-cover sm:h-24 sm:w-24"
                 />
-                <div className="flex-grow">
+                <div className="min-w-0 flex-grow">
                   <Link href={`/products/${item.id}`} className="font-semibold hover:underline">
                     {item.name}
                   </Link>
                   <p className="text-sm text-muted-foreground">{item.category}</p>
                    <p className="text-lg font-bold text-primary mt-1">₹{item.price.toLocaleString('en-IN')}</p>
                 </div>
-                <div className="flex items-center gap-2 border rounded-md p-1">
-                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity === 1}>
+                <div className="col-span-2 col-start-2 flex w-fit items-center gap-2 rounded-xl border p-1 sm:order-none">
+                   <Button variant="ghost" size="icon" className="h-10 w-10" aria-label={`Decrease quantity of ${item.name}`} onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity === 1}>
                         <Minus className="h-4 w-4" />
                     </Button>
                     <span className="font-bold text-md w-8 text-center">{item.quantity}</span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                    <Button variant="ghost" size="icon" className="h-10 w-10" aria-label={`Increase quantity of ${item.name}`} disabled={item.quantity >= (item.stock || 1)} onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                         <Plus className="h-4 w-4" />
                     </Button>
                 </div>
-                <p className="font-bold text-lg w-24 text-right">
+                <p className="col-start-2 font-bold text-lg sm:w-24 sm:text-right">
                     ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                 </p>
-                <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => removeItem(item.id)}>
+                <Button variant="ghost" size="icon" className="col-start-3 row-start-1 text-muted-foreground" aria-label={`Remove ${item.name} from bag`} onClick={() => removeItem(item.id)}>
                   <Trash2 className="h-5 w-5" />
                 </Button>
               </CardContent>

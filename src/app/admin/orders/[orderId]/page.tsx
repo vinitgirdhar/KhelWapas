@@ -55,8 +55,8 @@ import { format } from 'date-fns';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 
-type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
-type PaymentStatus = 'paid' | 'pending' | 'refunded' | 'partially_paid';
+type OrderStatus = 'PaymentFailed' | 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
+type PaymentStatus = 'failed' | 'paid' | 'pending' | 'refunded' | 'partially_paid';
 
 interface OrderItem {
   productId: string;
@@ -80,6 +80,7 @@ interface OrderDetails {
   };
   items: OrderItem[];
   amount: number;
+  shippingFee?: number;
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: string;
@@ -116,6 +117,7 @@ interface OrderDetails {
 }
 
 const statusConfig: Record<OrderStatus, { color: string; icon: React.ReactNode }> = {
+  PaymentFailed: { color: 'text-red-800 bg-red-100', icon: <XCircle className="h-4 w-4" /> },
   Pending: { 
     color: 'text-yellow-800 bg-yellow-100',
     icon: <Clock className="h-4 w-4" />
@@ -143,6 +145,7 @@ const statusConfig: Record<OrderStatus, { color: string; icon: React.ReactNode }
 };
 
 const paymentStatusConfig: Record<PaymentStatus, string> = {
+  failed: 'text-red-800 bg-red-100',
   paid: 'text-green-800 bg-green-100',
   pending: 'text-yellow-800 bg-yellow-100',
   refunded: 'text-red-800 bg-red-100',
@@ -163,6 +166,10 @@ export default function OrderDetailsPage() {
   const [newStatus, setNewStatus] = React.useState<OrderStatus>('Pending');
   const [note, setNote] = React.useState('');
   const [adminNote, setAdminNote] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const nextStatuses: Record<OrderStatus, OrderStatus[]> = { Pending: ['Confirmed', 'Cancelled'], Confirmed: ['Shipped', 'Cancelled'], Shipped: ['Delivered'], Delivered: ['Returned'], PaymentFailed: [], Cancelled: [], Returned: [] };
+  const availableStatuses = order ? nextStatuses[order.orderStatus] : [];
+  const openStatusUpdate = () => { setNewStatus(availableStatuses[0]); setUpdateStatusDialogOpen(true); };
 
   React.useEffect(() => {
     fetchOrderDetails();
@@ -200,6 +207,8 @@ export default function OrderDetailsPage() {
   };
 
   const handleCancelOrder = async () => {
+    if (busy) return;
+    setBusy(true);
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/cancel`, {
         method: 'POST',
@@ -230,10 +239,12 @@ export default function OrderDetailsPage() {
         description: 'Failed to cancel order',
         variant: 'destructive',
       });
-    }
+    } finally { setBusy(false); }
   };
 
   const handleUpdateStatus = async () => {
+    if (busy || !availableStatuses.includes(newStatus)) return;
+    setBusy(true);
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
@@ -264,10 +275,12 @@ export default function OrderDetailsPage() {
         description: 'Failed to update status',
         variant: 'destructive',
       });
-    }
+    } finally { setBusy(false); }
   };
 
   const handleAddNote = async () => {
+    if (busy || !adminNote.trim()) return;
+    setBusy(true);
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/notes`, {
         method: 'POST',
@@ -298,49 +311,11 @@ export default function OrderDetailsPage() {
         description: 'Failed to add note',
         variant: 'destructive',
       });
-    }
+    } finally { setBusy(false); }
   };
 
   const handlePrint = () => {
-    window.open(`/invoice/${orderId}`, '_blank');
-  };
-
-  const handleExportPDF = async () => {
-    toast({
-      title: 'Exporting...',
-      description: 'Generating PDF...',
-    });
-    // PDF export functionality would go here
-  };
-
-  const handleSendInvoice = async () => {
-    try {
-      const response = await fetch(`/api/admin/orders/${orderId}/send-invoice`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        toast({
-          title: 'Success',
-          description: 'Invoice sent to customer',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: data.message || 'Failed to send invoice',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to send invoice',
-        variant: 'destructive',
-      });
-    }
+    window.open(`/invoice/${order?.id || orderId}`, '_blank', 'noopener,noreferrer');
   };
 
   if (loading) {
@@ -365,14 +340,13 @@ export default function OrderDetailsPage() {
   }
 
   const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.18; // 18% GST
-  const shipping = 50; // Flat shipping
+  const shipping = order.shippingFee ?? 50;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex min-w-0 flex-col gap-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
@@ -381,22 +355,18 @@ export default function OrderDetailsPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Order Details</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">Order Details</h1>
             <p className="text-muted-foreground">
               {order.orderId} • {format(new Date(order.orderDate), 'PPp')}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" className="min-h-11" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            Print / Save PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Export PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setUpdateStatusDialogOpen(true)}>
+          <Button variant="outline" size="sm" className="min-h-11" disabled={!availableStatuses.length || busy} onClick={openStatusUpdate}>
             <Edit className="mr-2 h-4 w-4" />
             Update Status
           </Button>
@@ -404,7 +374,7 @@ export default function OrderDetailsPage() {
       </div>
 
       {/* Status Badges */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Badge variant="outline" className={statusConfig[order.orderStatus].color}>
           {statusConfig[order.orderStatus].icon}
           <span className="ml-2">{order.orderStatus}</span>
@@ -417,7 +387,7 @@ export default function OrderDetailsPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Left Column - Main Details */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="min-w-0 md:col-span-2 space-y-6">
           {/* Items */}
           <Card>
             <CardHeader>
@@ -426,10 +396,10 @@ export default function OrderDetailsPage() {
                 Order Items
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 break-words">
               {order.items.map((item, index) => (
-                <div key={index} className="flex gap-4 pb-4 border-b last:border-0 last:pb-0">
-                  <div className="relative h-20 w-20 rounded-md overflow-hidden bg-muted">
+                <div key={index} className="flex flex-wrap gap-3 pb-4 border-b last:border-0 last:pb-0">
+                  <div className="relative h-16 w-16 shrink-0 rounded-md overflow-hidden bg-muted sm:h-20 sm:w-20">
                     <Image
                       src={item.image}
                       alt={item.productName}
@@ -437,7 +407,7 @@ export default function OrderDetailsPage() {
                       className="object-cover"
                     />
                   </div>
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1 basis-24 break-words">
                     <h4 className="font-medium">{item.productName}</h4>
                     <p className="text-sm text-muted-foreground">
                       Quantity: {item.quantity}
@@ -467,10 +437,6 @@ export default function OrderDetailsPage() {
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tax (GST 18%)</span>
-                <span>₹{tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
                 <span>₹{shipping}</span>
               </div>
@@ -491,7 +457,7 @@ export default function OrderDetailsPage() {
                   Shipping & Delivery
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 break-words">
                 <div>
                   <h4 className="font-medium mb-2">Shipping Address</h4>
                   <div className="text-sm text-muted-foreground space-y-1">
@@ -575,7 +541,7 @@ export default function OrderDetailsPage() {
                   Notes
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 break-words">
                 {order.notes && (
                   <div>
                     <h4 className="text-sm font-medium mb-2">Customer Notes</h4>
@@ -603,7 +569,7 @@ export default function OrderDetailsPage() {
                 Customer
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 break-words">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={order.customer.profilePicture} />
@@ -614,7 +580,7 @@ export default function OrderDetailsPage() {
                 <div>
                   <p className="font-medium">{order.customer.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {order.customer.totalOrders} orders
+                    View customer account for order history
                   </p>
                 </div>
               </div>
@@ -624,14 +590,14 @@ export default function OrderDetailsPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a href={`mailto:${order.customer.email}`} className="hover:underline">
+                  <a href={`mailto:${order.customer.email}`} className="min-w-0 break-all hover:underline">
                     {order.customer.email}
                   </a>
                 </div>
                 {order.customer.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${order.customer.phone}`} className="hover:underline">
+                    <a href={`tel:${order.customer.phone}`} className="min-w-0 break-all hover:underline">
                       {order.customer.phone}
                     </a>
                   </div>
@@ -685,19 +651,13 @@ export default function OrderDetailsPage() {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => setUpdateStatusDialogOpen(true)}
+                disabled={!availableStatuses.length || busy}
+                onClick={openStatusUpdate}
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Update Status
               </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={handleSendInvoice}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Send Invoice
-              </Button>
+              <p className="py-2 text-xs text-muted-foreground">Email delivery is not connected. Open the invoice to print or save a PDF.</p>
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
@@ -714,7 +674,7 @@ export default function OrderDetailsPage() {
                 <Mail className="mr-2 h-4 w-4" />
                 Contact Customer
               </Button>
-              {order.orderStatus !== 'Cancelled' && order.orderStatus !== 'Delivered' && (
+              {['Pending', 'Confirmed'].includes(order.orderStatus) && (
                 <Button 
                   variant="destructive" 
                   className="w-full justify-start"
@@ -745,6 +705,7 @@ export default function OrderDetailsPage() {
                 id="cancel-reason"
                 placeholder="Enter reason for cancellation..."
                 value={note}
+                maxLength={1000}
                 onChange={(e) => setNote(e.target.value)}
               />
             </div>
@@ -753,7 +714,7 @@ export default function OrderDetailsPage() {
             <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
               Keep Order
             </Button>
-            <Button variant="destructive" onClick={handleCancelOrder}>
+            <Button variant="destructive" disabled={busy} onClick={handleCancelOrder}>
               Cancel Order
             </Button>
           </DialogFooter>
@@ -772,17 +733,12 @@ export default function OrderDetailsPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="status">New Status</Label>
-              <Select value={newStatus} onValueChange={(value) => setNewStatus(value as OrderStatus)}>
+              <Select disabled={busy} value={newStatus} onValueChange={(value) => setNewStatus(value as OrderStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Confirmed">Confirmed</SelectItem>
-                  <SelectItem value="Shipped">Shipped</SelectItem>
-                  <SelectItem value="Delivered">Delivered</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  <SelectItem value="Returned">Returned</SelectItem>
+                  {availableStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -791,7 +747,7 @@ export default function OrderDetailsPage() {
             <Button variant="outline" onClick={() => setUpdateStatusDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateStatus}>
+            <Button disabled={busy || !availableStatuses.includes(newStatus)} onClick={handleUpdateStatus}>
               Update Status
             </Button>
           </DialogFooter>
@@ -814,6 +770,7 @@ export default function OrderDetailsPage() {
                 id="admin-note"
                 placeholder="Enter admin note..."
                 value={adminNote}
+                maxLength={Math.max(5000, order.adminNotes?.length || 0)}
                 onChange={(e) => setAdminNote(e.target.value)}
                 rows={4}
               />
@@ -823,7 +780,7 @@ export default function OrderDetailsPage() {
             <Button variant="outline" onClick={() => setAddNoteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddNote}>
+            <Button disabled={busy || !adminNote.trim()} onClick={handleAddNote}>
               Add Note
             </Button>
           </DialogFooter>

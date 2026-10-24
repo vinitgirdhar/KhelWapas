@@ -1,7 +1,9 @@
 
 'use client';
+import { getSessionValue, setSessionValue, removeSessionValue } from '@/lib/session-storage';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
@@ -16,15 +18,17 @@ import { savePurchaseIntent } from '@/lib/purchase-intent';
 
 export default function CheckoutPage() {
   const { toast } = useToast();
+  const { isLoggedIn, loading: authLoading } = useAuth();
   const router = useRouter();
   const { items } = useCart();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     setIsMounted(true);
     // Require login for checkout entry
-    const loggedIn = typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true';
+    const loggedIn = isLoggedIn;
     if (!loggedIn) {
       savePurchaseIntent({ action: 'checkout', createdAt: Date.now(), returnTo: '/checkout' });
       toast({ title: 'Login required', description: 'Please login to continue with your purchase.' });
@@ -32,19 +36,19 @@ export default function CheckoutPage() {
       return;
     }
     // Persist selected address across reloads if needed, e.g., in sessionStorage
-    const storedAddress = sessionStorage.getItem('selectedAddress');
+    const storedAddress = getSessionValue('selectedAddress');
     if (storedAddress) {
-      setSelectedAddress(JSON.parse(storedAddress));
+      try { setSelectedAddress(JSON.parse(storedAddress)); } catch { removeSessionValue('selectedAddress'); }
     }
-  }, []);
+  }, [authLoading, isLoggedIn]);
 
   const handleSelectAddress = (address: Address | null) => {
     setSelectedAddress(address);
     // Store selected address to persist it if user navigates away and comes back
     if (address) {
-      sessionStorage.setItem('selectedAddress', JSON.stringify(address));
+      setSessionValue('selectedAddress', JSON.stringify(address));
     } else {
-      sessionStorage.removeItem('selectedAddress');
+      removeSessionValue('selectedAddress');
     }
   }
 
@@ -60,10 +64,7 @@ export default function CheckoutPage() {
     return null; // or a loading skeleton
   }
 
-  if (items.length === 0 && isMounted) {
-    router.push('/cart');
-    return null;
-  }
+  if (items.length === 0 && isMounted) return <div className="container py-16"><h1 className="text-2xl font-semibold">Your bag is empty</h1><Button asChild className="mt-4"><Link href="/shop/preowned">Explore gear</Link></Button></div>;
 
   return (
     <div className="container py-12 md:py-16">

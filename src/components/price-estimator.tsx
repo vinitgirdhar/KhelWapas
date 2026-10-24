@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,18 +33,19 @@ import { Wand2, Loader2, AlertTriangle, BadgeDollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
-  equipmentType: z.string().min(3, 'Please enter a valid equipment type.'),
+  equipmentType: z.string().trim().min(3, 'Please enter a valid equipment type.').max(100),
   equipmentGrade: z.enum(['A', 'B', 'C', 'D']),
-  equipmentAge: z.coerce.number().min(0, 'Age must be a positive number.'),
+  equipmentAge: z.coerce.number<number>().min(0, 'Age must be zero or more.').max(50, 'Enter an age up to 50 years.'),
   equipmentConditionDescription: z
     .string()
-    .min(10, 'Please provide a more detailed description.'),
+    .min(10, 'Please provide a more detailed description.').max(2000),
   pastSalesData: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export default function PriceEstimator() {
+  const { isLoggedIn } = useAuth();
   const [result, setResult] = useState<EstimateResalePriceOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,18 +65,17 @@ export default function PriceEstimator() {
     setResult(null);
     setError(null);
     try {
-      const estimation = await estimateResalePrice(values);
+      const estimation = await estimateResalePrice({ ...values, pastSalesData: values.pastSalesData || '' });
       setResult(estimation);
     } catch (e) {
-      console.error(e);
-      setError('An unexpected error occurred. Please try again.');
+      setError(e instanceof Error ? e.message : 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Card className="shadow-2xl">
+    <Card className="min-w-0 shadow-sm">
       <CardHeader>
         <div className="flex items-center gap-3">
             <div className="bg-primary/10 p-3 rounded-full">
@@ -81,14 +83,14 @@ export default function PriceEstimator() {
             </div>
             <div>
                 <CardTitle className="font-headline text-2xl">
-                AI Price Estimator
+                Price guide
                 </CardTitle>
-                <CardDescription>Get an instant resale value estimate.</CardDescription>
+                <CardDescription>An indicative guide from current asking prices.</CardDescription>
             </div>
         </div>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
+        {!isLoggedIn ? <div className="space-y-4"><p className="text-sm text-muted-foreground">Sign in to compare similar listings and get a rough asking-price guide.</p><Button asChild><Link href="/login?redirect=%2Fsell">Sign in for a price guide</Link></Button></div> : <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
@@ -103,7 +105,7 @@ export default function PriceEstimator() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="equipmentGrade"
@@ -137,7 +139,7 @@ export default function PriceEstimator() {
                   <FormItem>
                     <FormLabel>Age (years)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" max="50" step="0.1" inputMode="decimal" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -170,7 +172,7 @@ export default function PriceEstimator() {
               Estimate Price
             </Button>
           </form>
-        </Form>
+        </Form>}
         
         <div className="mt-8">
             {loading && (
@@ -194,14 +196,14 @@ export default function PriceEstimator() {
                             <BadgeDollarSign className="h-10 w-10 text-green-600" />
                         </div>
                         <CardDescription>Estimated Resale Value</CardDescription>
-                        <p className="font-headline text-5xl font-bold text-primary">
+                        <p className="break-words font-headline text-3xl sm:text-4xl font-bold text-primary">
                            ₹{result.estimatedPrice.toLocaleString('en-IN')}
                         </p>
                     </CardHeader>
                     <CardContent className="text-center">
                         <p className="font-semibold">Confidence: <span className="font-normal text-muted-foreground">{result.confidenceLevel}</span></p>
                         <p className="mt-2 text-sm text-muted-foreground italic">&quot;{result.reasoning}&quot;</p>
-                         <Button className="mt-6 w-full font-bold" size="lg">Schedule Pickup</Button>
+                         <p className="mt-5 text-sm text-muted-foreground">Use this as a starting point for your asking price in the listing form. Pickups are only simulated after review.</p>
                     </CardContent>
                 </Card>
             )}

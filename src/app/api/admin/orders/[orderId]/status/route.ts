@@ -1,86 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { orderId: string } }
-) {
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/auth';
+import { findOrder, changeOrderStatus } from '@/lib/orders';
+import { apiError, ApiError } from '@/lib/api';
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { orderId } = params
-    const body = await request.json()
-    const { status } = body
-
-    if (!status) {
-      return NextResponse.json(
-        { success: false, message: 'Status is required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate status
-    const validStatuses = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned']
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid status' },
-        { status: 400 }
-      )
-    }
-
-    // Extract the UUID prefix from the short orderId format
-    const idPrefix = orderId.replace('ORD-', '').toLowerCase()
-    
-    // Find order by the UUID prefix
-    const orders = await prisma.order.findMany({
-      where: {
-        id: {
-          startsWith: idPrefix
-        }
-      },
-      take: 1
-    })
-    
-    const order = orders[0]
-
-    if (!order) {
-      return NextResponse.json(
-        { success: false, message: 'Order not found' },
-        { status: 404 }
-      )
-    }
-
-    // Update order status
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        fulfillmentStatus: status,
-        updatedAt: new Date()
-      }
-    })
-
-    // In a real app, you would:
-    // - Send email notification to customer
-    // - Update tracking information
-    // - Trigger webhooks
-    // - Log the status change
-
-    return NextResponse.json({
-      success: true,
-      message: 'Order status updated successfully'
-    })
-  } catch (error) {
-    console.error('Update order status error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    await requireUser(request, true);
+    const order = await findOrder((await params).orderId);
+    if (!order) throw new ApiError(404, 'Order not found');
+    const { status } = z.object({ status: z.string().max(30) }).parse(await request.json());
+    const updated = await changeOrderStatus(order.id, status);
+    return NextResponse.json({ success: true, order: updated, message: 'Order updated' });
+  } catch (e) { return apiError(e); }
 }

@@ -1,3 +1,4 @@
+import { pagination, apiError } from '@/lib/api';
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
@@ -15,9 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Pagination support
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const skip = (page - 1) * limit
+    const { page, limit, skip } = pagination(searchParams, 50)
 
     // Get all sell requests with user information
     const sellRequests = await prisma.sellRequest.findMany({
@@ -66,11 +65,5 @@ export async function GET(request: NextRequest) {
       success: true,
       sellRequests: transformedRequests
     })
-  } catch (error) {
-    console.error('Get sell requests error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+  } catch (error) { return apiError(error); }
 }

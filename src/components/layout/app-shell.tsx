@@ -2,36 +2,41 @@
 
 import { usePathname } from 'next/navigation';
 import Head from 'next/head';
+import PageMotion from '@/components/motion/page-motion';
+import MobileNav from './mobile-nav';
+import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
-import KhelbotWidget from '@/components/khelbot/khelbot-widget';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isLoggedIn, loading } = useAuth();
+  const showMobileNav = isLoggedIn && !loading && pathname !== '/' && !pathname.startsWith('/admin') && !pathname.startsWith('/invoice');
   const isAdminRoute = pathname.startsWith('/admin');
   const isInvoiceRoute = pathname.startsWith('/invoice');
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
+    <PageMotion><div className={cn("relative flex min-h-dvh flex-col", showMobileNav && "has-mobile-dock pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0")}>
+      <a href="#main-content" className="skip-link">Skip to content</a>
       {isInvoiceRoute && (
         <Head>
           <link rel="stylesheet" href="/invoice-print.css" />
         </Head>
       )}
       {isAdminRoute || isInvoiceRoute ? null : <Header />}
-      <main
+      <main id="main-content" tabIndex={-1}
         className={cn('flex-1', {
           'bg-muted/40': isAdminRoute,
-          'bg-gray-100': isInvoiceRoute,
+          'bg-muted': isInvoiceRoute,
         })}
       >
         {children}
       </main>
       {isAdminRoute || isInvoiceRoute ? null : <Footer />}
       <Toaster />
-      {!isAdminRoute && <KhelbotWidget />}
-    </div>
+      {!isAdminRoute && !isInvoiceRoute && showMobileNav && <MobileNav />}
+    </div></PageMotion>
   );
 }

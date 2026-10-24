@@ -38,7 +38,7 @@ export default function OrderSummary({ items }: OrderSummaryProps) {
             </div>
             <div className="text-right">
                 <p className="font-semibold">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => removeItem(item.id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label={`Remove ${item.name} from bag`} onClick={() => removeItem(item.id)}>
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </div>

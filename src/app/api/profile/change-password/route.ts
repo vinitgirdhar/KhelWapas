@@ -1,48 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
-
-// POST /api/profile/change-password - Change user password
+import { requireUser, verifyPassword, hashPassword, generateToken, setAuthCookie } from '@/lib/auth';
+import { apiError, ApiError } from '@/lib/api';
+import { passwordSchema } from '@/lib/validation';
+import { rateLimit } from '@/lib/rate-limit';
 export async function POST(request: NextRequest) {
   try {
-    const { userId, currentPassword, newPassword } = await request.json();
-
-    if (!userId || !currentPassword || !newPassword) {
-      return NextResponse.json(
-        { error: 'User ID, current password, and new password are required' },
-        { status: 400 }
-      );
-    }
-
-    // Fetch user with current password hash
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, passwordHash: true },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isCurrentPasswordValid) {
-      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
-    }
-
-    // Hash new password
-    const saltRounds = 12;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
-
-    // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: newPasswordHash },
-    });
-
-    return NextResponse.json({ message: 'Password updated successfully' });
-  } catch (error) {
-    console.error('Error changing password:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    const claims = await requireUser(request);
+    await rateLimit('password', claims.userId, 5);
+    const { currentPassword, newPassword } = z.object({ currentPassword: z.string().min(1).max(72), newPassword: passwordSchema }).parse(await request.json());
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: claims.userId } });
+    if (!await verifyPassword(currentPassword, user.passwordHash)) throw new ApiError(400, 'Current password is incorrect');
+    const updated = await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(newPassword), sessionVersion: { increment: 1 } } });
+    const response = NextResponse.json({ success: true, message: 'Password updated; other sessions signed out' });
+    response.headers.set('Set-Cookie', setAuthCookie(generateToken({ userId: user.id, email: user.email, role: user.role, sessionVersion: updated.sessionVersion })));
+    return response;
+  } catch (e) { return apiError(e); }
 }

@@ -1,76 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { verifyPassword, generateToken, setAuthCookie } from '@/lib/auth'
-
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { verifyPassword, generateToken, setAuthCookie } from '@/lib/auth';
+import { apiError, ApiError } from '@/lib/api';
+import { emailSchema } from '@/lib/validation';
+import { rateLimit } from '@/lib/rate-limit';
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password } = body
-
-    // Validate required fields
-    if (!email || !password) {
-      return NextResponse.json(
-        { success: false, message: 'Email and password are required' },
-        { status: 400 }
-      )
-    }
-
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.passwordHash)
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-
-    // Generate JWT token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role
-    })
-
-    // Create response with cookie
-    const response = NextResponse.json({
-      success: true,
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role
-      }
-    })
-
-    // Set the auth cookie properly
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60, // 1 week
-      path: '/',
-      sameSite: 'lax'
-    })
-
-    return response
-  } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    const { email, password } = z.object({ email: emailSchema, password: z.string().min(1).max(72) }).parse(await request.json());
+    await rateLimit('login', email, 12);
+    const user = await prisma.user.findUnique({ where: { email } });
+    const valid = await verifyPassword(password, user?.passwordHash ?? '$2b$12$S2pNhKpt4nTfIlXagJ3DmuVz4eYd4eDJGMMWpJOgaKOx1XLDqv4IW');
+    if (!user || !valid || user.status !== 'Active') throw new ApiError(401, 'Invalid email or password');
+    const token = generateToken({ userId: user.id, email: user.email, role: user.role, sessionVersion: user.sessionVersion });
+    const response = NextResponse.json({ success: true, user: { id: user.id, fullName: user.fullName, name: user.fullName, email: user.email, role: user.role } });
+    response.headers.set('Set-Cookie', setAuthCookie(token));
+    return response;
+  } catch (error) { return apiError(error); }
 }

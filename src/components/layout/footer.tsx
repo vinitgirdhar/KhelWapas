@@ -1,82 +1,17 @@
-
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Github, Twitter, Instagram } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { KhelwapasLogo } from '@/components/icons/khelwapas-logo';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
 export default function Footer() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const currentYear = new Date().getFullYear();
-
-  return (
-    <footer className="bg-muted/40 border-t" suppressHydrationWarning>
-      <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <Link href="/" aria-label="Khelwapas Home">
-              <KhelwapasLogo />
-            </Link>
-            <p className="text-muted-foreground max-w-sm">
-              The premier marketplace for new and pre-owned sports gear. Join our community and play on!
-            </p>
-            <div className="flex items-center gap-2 mt-2" suppressHydrationWarning>
-              <a href="#" aria-label="Twitter">
-                <Button variant="ghost" size="icon" suppressHydrationWarning>
-                  <Twitter className="h-5 w-5 text-muted-foreground hover:text-primary" />
-                </Button>
-              </a>
-              <a href="#" aria-label="Instagram">
-                <Button variant="ghost" size="icon" suppressHydrationWarning>
-                  <Instagram className="h-5 w-5 text-muted-foreground hover:text-primary" />
-                </Button>
-              </a>
-              <a href="#" aria-label="Github">
-                <Button variant="ghost" size="icon" suppressHydrationWarning>
-                  <Github className="h-5 w-5 text-muted-foreground hover:text-primary" />
-                </Button>
-              </a>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-headline font-semibold mb-4">Shop</h4>
-            <ul className="space-y-2">
-              <li><Link href="/shop/preowned" className="text-muted-foreground hover:text-primary">Pre-Owned Gear</Link></li>
-              <li><Link href="/shop/new" className="text-muted-foreground hover:text-primary">New Gear</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Bundles & Kits</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Clearance</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-headline font-semibold mb-4">Sell</h4>
-            <ul className="space-y-2">
-              <li><Link href="/sell" className="text-muted-foreground hover:text-primary">Sell Your Gear</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">How It Works</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Grading Guide</Link></li>
-              <li><Link href="#" className="text-muted-foreground hover:text-primary">Pickup Service</Link></li>
-            </ul>
-          </div>
-          <div className="md:col-span-2 lg:col-span-1">
-            <h4 className="font-headline font-semibold mb-4">Stay Connected</h4>
-            <p className="text-muted-foreground mb-2 text-sm">Get the latest deals and new arrivals.</p>
-            <form className="flex gap-2" suppressHydrationWarning>
-              <Input type="email" placeholder="Enter your email" className="bg-background" suppressHydrationWarning />
-              <Button type="submit" variant="secondary" className="shrink-0" suppressHydrationWarning>Subscribe</Button>
-            </form>
-          </div>
-        </div>
-        <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground" suppressHydrationWarning>
-          <p>&copy; {currentYear} KHELWAPAS. All Rights Reserved. | <Link href="/admin/login" className="hover:text-primary hover:underline">Admin Login</Link></p>
-        </div>
+  return <footer className="border-t bg-muted/35">
+    <div className="container grid grid-cols-2 gap-x-6 gap-y-8 py-8 md:grid-cols-[1.5fr_1fr_1fr] md:gap-10 md:py-14">
+      <div className="col-span-2 md:col-span-1">
+        <div className="flex items-center gap-2"><KhelwapasLogo /><span className="font-bold tracking-tight text-primary">KHELWAPAS</span></div>
+        <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">More life for your gear. More possibilities for the next player. Keep the game going.</p>
+        <Link href="/sell" className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-primary">Pass your gear forward <ArrowUpRight size={16} /></Link>
       </div>
-    </footer>
-  );
+      <nav aria-label="Explore"><h2 className="mb-3 text-sm font-semibold">Find your games</h2><div className="grid gap-1 text-sm text-muted-foreground md:gap-2">{[['/shop/preowned','Pre-owned gear'],['/shop/new','New gear'],['/sell','Sell your equipment'],['/help','How it works & condition guide']].map(([href,label]) => <Link key={href} href={href} className="flex min-h-10 items-center transition-colors hover:text-primary">{label}</Link>)}</div></nav>
+      <nav aria-label="Your account"><h2 className="mb-3 text-sm font-semibold">Your corner</h2><div className="grid gap-1 text-sm text-muted-foreground md:gap-2">{[['/profile','Your account'],['/profile/orders','Your orders'],['/profile/requests','Your sell requests'],['/profile/addresses','Delivery addresses']].map(([href,label]) => <Link key={href} href={href} className="flex min-h-10 items-center transition-colors hover:text-primary">{label}</Link>)}</div></nav>
+    </div>
+    <div className="container flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t py-5 text-xs leading-relaxed text-muted-foreground"><p>© {new Date().getFullYear()} KHELWAPAS. Keep the game going.</p><span>Prototype · Payments and delivery are simulated</span><Link href="/admin/login" className="py-2 hover:text-primary">Admin sign in</Link></div>
+  </footer>;
 }

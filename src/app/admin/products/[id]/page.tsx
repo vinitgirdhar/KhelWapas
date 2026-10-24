@@ -30,7 +30,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
 import type { Product } from '@/components/product-card';
@@ -46,6 +46,7 @@ interface FileWithPreview {
 }
 
 export default function ProductFormPage() {
+    const [isSaving, setIsSaving] = useState(false);
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -54,10 +55,10 @@ export default function ProductFormPage() {
     const [originalPrice, setOriginalPrice] = useState<string>('');
     const [sku, setSku] = useState('');
     const [stock, setStock] = useState(0);
-    const [status, setStatus] = useState<'In Stock' | 'Out of Stock'>('In Stock');
+    const [isAvailable, setIsAvailable] = useState(true);
     const [type, setType] = useState<'new' | 'preowned'>('new');
     const [category, setCategory] = useState('');
-    const [badge, setBadge] = useState<'A' | 'B' | 'C' | 'D' | undefined>(undefined);
+    const [badge, setBadge] = useState<string | undefined>(undefined);
     const [grade, setGrade] = useState<'A' | 'B' | 'C' | 'D' | undefined>(undefined);
     
     const { toast } = useToast();
@@ -65,12 +66,17 @@ export default function ProductFormPage() {
     const params = useParams();
     const productId = typeof params.id === 'string' ? params.id : null;
     const isEditing = productId !== 'new';
+    const [isLoading, setIsLoading] = useState(isEditing);
+    const filesRef = useRef(files);
+    filesRef.current = files;
 
     useEffect(() => {
+        const controller = new AbortController();
         if (isEditing && productId) {
+            setIsLoading(true);
             const fetchProduct = async () => {
                 try {
-                    const response = await fetch(`/api/products/${productId}`);
+                    const response = await fetch(`/api/products/${productId}`, { signal: controller.signal });
                     const data = await response.json();
                     if (data.success && data.product) {
                         const product = data.product;
@@ -79,8 +85,8 @@ export default function ProductFormPage() {
                         setPrice(product.price?.toString() ?? '');
                         setOriginalPrice((product.originalPrice ?? '').toString());
                         setSku(product.sku);
-                        setStock(product.status === 'In Stock' ? 1 : 0);
-                        setStatus(product.status);
+                        setStock(product.stock ?? 0);
+                        setIsAvailable(product.isAvailable ?? product.status === 'In Stock');
                         setType(product.type);
                         setCategory(product.category);
                         setBadge(product.badge || undefined);
@@ -118,21 +124,31 @@ export default function ProductFormPage() {
                         router.push('/admin/products');
                     }
                 } catch (error) {
-                    console.error('Failed to fetch product:', error);
+                    if (controller.signal.aborted) return;
                     toast({ variant: 'destructive', title: 'Failed to load product' });
                     router.push('/admin/products');
-                }
+                } finally { if (!controller.signal.aborted) setIsLoading(false); }
             };
 
             fetchProduct();
-        }
+        } else setIsLoading(false);
+        return () => controller.abort();
     }, [isEditing, productId, router, toast]);
 
     const [isUploading, setIsUploading] = useState(false);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        accept: { 'image/*': [] },
+        accept: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'], 'image/webp': ['.webp'] },
+        maxSize: 5 * 1024 * 1024,
+        maxFiles: 10,
+        disabled: isUploading || isSaving,
+        onDropRejected: () => toast({ variant: 'destructive', title: 'Use JPEG, PNG or WebP images', description: 'Choose up to 10 images, each no larger than 5 MB.' }),
         onDrop: async (acceptedFiles) => {
+            if (!acceptedFiles.length || isUploading || isSaving) return;
+            if (acceptedFiles.reduce((sum, file) => sum + file.size, 0) > 25 * 1024 * 1024) {
+                toast({ variant: 'destructive', title: 'Images are too large', description: 'Upload no more than 25 MB at a time.' });
+                return;
+            }
             if (files.length + acceptedFiles.length > 10) {
                 toast({
                     variant: 'destructive',
@@ -205,7 +221,6 @@ export default function ProductFormPage() {
                 });
 
             } catch (error) {
-                console.error('Failed to upload files:', error);
                 toast({
                     variant: 'destructive',
                     title: 'Upload Error',
@@ -213,6 +228,7 @@ export default function ProductFormPage() {
                 });
                 // Remove the temporary previews if upload fails
                 setFiles(prevFiles => prevFiles.filter(f => !newFilesWithPreview.some(nf => nf.id === f.id)));
+                newFilesWithPreview.forEach(file => URL.revokeObjectURL(file.preview));
             } finally {
                 setIsUploading(false);
             }
@@ -233,11 +249,18 @@ export default function ProductFormPage() {
     };
 
     const handleSave = async () => {
+        if (isUploading || isSaving || isLoading) return;
+        if (name.trim().length < 3 || category.trim().length < 2 || description.trim().length < 20 || !Number.isFinite(Number(price)) || Number(price) <= 0 || Number(price) > 10000000 || !Number.isInteger(stock) || stock < 0 || stock > 10000 || !files.length) {
+            toast({ variant: 'destructive', title: 'Check the product details', description: 'Add a name, category, description of at least 20 characters, a valid price, stock from 0–10,000, and at least one image.' });
+            return;
+        }
+        setIsSaving(true);
+        try {
         if (!isEditing) {
             // Create new product
             try {
                 // First upload images if there are new files
-                let imageUrls: string[] = [];
+                let imageUrls: string[] = files.map(file => file.originalUrl).filter((url): url is string => !!url);
                 
                 const newFilesToUpload = files.filter(f => f.file && !f.isExisting);
                 
@@ -257,7 +280,7 @@ export default function ProductFormPage() {
                     if (uploadResponse.ok) {
                         const uploadData = await uploadResponse.json();
                         if (uploadData.success && uploadData.files) {
-                            imageUrls = uploadData.files;
+                            imageUrls = [...imageUrls, ...uploadData.files];
                         } else {
                             throw new Error(uploadData.message || 'Failed to get image URLs from upload response');
                         }
@@ -272,10 +295,11 @@ export default function ProductFormPage() {
                     name,
                     category,
                     type,
-                    price,
-                    originalPrice,
+                    price: Number(price),
+                    originalPrice: originalPrice ? Number(originalPrice) : null,
                     description,
-                    isAvailable: status === 'In Stock',
+                    isAvailable,
+                    stock: Number(stock),
                     imageUrls,
                     specs: {}
                 };
@@ -284,7 +308,6 @@ export default function ProductFormPage() {
                 if (badge) payload.badge = badge;
                 if (grade) payload.grade = grade;
                 
-                console.log('Creating new product with payload:', payload);
                 
                 const createResponse = await fetch('/api/products/create', {
                     method: 'POST',
@@ -304,7 +327,7 @@ export default function ProductFormPage() {
                 });
                 
                 // Trigger real-time update on products page
-                localStorage.setItem('productCreated', 'true');
+                try { localStorage.setItem('productCreated', 'true'); } catch { /* Saving does not require browser storage. */ }
                 
                 router.push('/admin/products');
                 return;
@@ -325,10 +348,11 @@ export default function ProductFormPage() {
                     name,
                     category,
                     type,
-                    price,
-                    originalPrice,
+                    price: Number(price),
+                    originalPrice: originalPrice ? Number(originalPrice) : null,
                     description,
-                    isAvailable: status === 'In Stock',
+                    isAvailable,
+                    stock: Number(stock),
                     badge: badge ?? null,
                     grade: grade ?? null,
                 }
@@ -340,13 +364,6 @@ export default function ProductFormPage() {
 
                 payload.imageUrls = allImageUrls;
 
-                console.log('=== DEBUGGING PRODUCT UPDATE ===');
-                console.log('Product ID:', productId);
-                console.log('Payload being sent:', JSON.stringify(payload, null, 2));
-                console.log('Form state - badge:', badge);
-                console.log('Form state - grade:', grade);
-                console.log('Form state - status:', status);
-                console.log('Image URLs:', allImageUrls);
 
                 const res = await fetch(`/api/products/${productId}`, {
                     method: 'PATCH',
@@ -354,21 +371,16 @@ export default function ProductFormPage() {
                     body: JSON.stringify(payload),
                 })
 
-                console.log('Response status:', res.status);
-                console.log('Response ok:', res.ok);
-                console.log('Response headers:', Object.fromEntries(res.headers.entries()));
 
                 let data;
                 try {
                     const responseText = await res.text();
-                    console.log('Raw response text:', responseText);
                     data = responseText ? JSON.parse(responseText) : {};
                 } catch (parseError) {
                     console.error('Failed to parse response as JSON:', parseError);
                     data = {};
                 }
 
-                console.log('Parsed response data:', JSON.stringify(data, null, 2));
 
                 if (!res.ok || !data.success) {
                     console.error('Backend validation failed:', {
@@ -385,7 +397,7 @@ export default function ProductFormPage() {
                 setDescription(updated.description || '')
                 setPrice(updated.price != null ? String(updated.price) : '')
                 setOriginalPrice(updated.originalPrice != null ? String(updated.originalPrice) : '')
-                setStatus(updated.status as 'In Stock' | 'Out of Stock')
+                setIsAvailable((updated as Product & { isAvailable?: boolean }).isAvailable ?? updated.status === 'In Stock')
                 setType(updated.type as 'new' | 'preowned')
                 setCategory(updated.category)
                 
@@ -409,7 +421,7 @@ export default function ProductFormPage() {
                 })
 
                 // Trigger real-time update on products page
-                localStorage.setItem('productUpdated', 'true');
+                try { localStorage.setItem('productUpdated', 'true'); } catch { /* Saving does not require browser storage. */ }
 
                 // Navigate back to products list (or stay and keep editing)
                 router.push('/admin/products')
@@ -420,18 +432,19 @@ export default function ProductFormPage() {
         } else {
             toast({ variant: 'destructive', title: 'Invalid product', description: 'Missing product id' })
         }
+        } finally { setIsSaving(false); }
     }
 
     // Cleanup object URLs when component unmounts
     useEffect(() => {
         return () => {
-            files.forEach(file => {
+            filesRef.current.forEach(file => {
                 if (!file.isExisting) {
                     URL.revokeObjectURL(file.preview);
                 }
             });
         };
-    }, [files]);
+    }, []);
 
     // Helper to determine dynamic step based on current numeric value
     const dynamicStep = (valStr: string) => {
@@ -468,24 +481,25 @@ export default function ProductFormPage() {
         setter(next === 0 ? '' : next.toString());
     };
 
+    if (isLoading) return <p role="status" className="p-6 text-muted-foreground">Loading product…</p>;
     return (
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <div className="mx-auto grid max-w-[59rem] flex-1 auto-rows-max gap-4">
+        <main className="grid min-w-0 flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+            <div className="mx-auto grid min-w-0 w-full max-w-[59rem] flex-1 auto-rows-max gap-4">
                 <div className="flex items-center gap-4">
-                    <Button asChild variant="outline" size="icon" className="h-7 w-7">
+                    <Button asChild variant="outline" size="icon" className="h-11 w-11 shrink-0">
                         <Link href="/admin/products">
                             <ChevronLeft className="h-4 w-4" />
                             <span className="sr-only">Back</span>
                         </Link>
                     </Button>
-                    <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
+                    <h1 className="min-w-0 flex-1 text-xl font-semibold tracking-tight sm:grow-0">
                         {isEditing ? 'Edit Product' : 'New Product'}
                     </h1>
                     <div className="hidden items-center gap-2 md:ml-auto md:flex">
                         <Button variant="outline" size="sm" onClick={() => router.push('/admin/products')}>
                             Discard
                         </Button>
-                        <Button size="sm" onClick={handleSave}>Save Product</Button>
+                        <Button size="sm" disabled={isUploading || isSaving} onClick={handleSave}>Save Product</Button>
                     </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
@@ -506,6 +520,7 @@ export default function ProductFormPage() {
                                             type="text"
                                             className="w-full"
                                             value={name}
+                                            maxLength={160}
                                             onChange={(e) => setName(e.target.value)}
                                         />
                                     </div>
@@ -514,6 +529,7 @@ export default function ProductFormPage() {
                                         <Textarea
                                             id="description"
                                             value={description}
+                                            maxLength={10000}
                                             onChange={(e) => setDescription(e.target.value)}
                                             className="min-h-32"
                                         />
@@ -525,7 +541,7 @@ export default function ProductFormPage() {
                             <CardHeader>
                                 <CardTitle>Product Images</CardTitle>
                                 <CardDescription>
-                                    Upload up to 10 images for the product. The first image will be the thumbnail.
+                                    Upload up to 10 JPEG, PNG or WebP images (5 MB each, 25 MB per upload). The first image is the thumbnail.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -548,7 +564,7 @@ export default function ProductFormPage() {
                                     </div>
                                 </div>
                                 {files.length > 0 && (
-                                    <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                                         {files.map((file, i) => (
                                             <div key={file.id} className="relative aspect-square group">
                                                 <Image 
@@ -561,9 +577,10 @@ export default function ProductFormPage() {
                                                     type="button" 
                                                     variant="destructive" 
                                                     size="icon" 
-                                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+                                                    className="absolute top-1 right-1 h-10 w-10 rounded-full shadow-md"
+                                                    aria-label={`Remove image ${i + 1}`}
                                                     onClick={() => removeFile(file)}
-                                                    disabled={isUploading}
+                                                    disabled={isUploading || isSaving}
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>
@@ -671,21 +688,21 @@ export default function ProductFormPage() {
                                 <div className="grid gap-6">
                                     <div className="grid gap-3">
                                         <Label htmlFor="sku">SKU</Label>
-                                        <Input id="sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)} />
+                                        <Input id="sku" type="text" value={sku} readOnly placeholder="Assigned when saved" className="bg-muted" />
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="stock">Stock</Label>
-                                        <Input id="stock" type="number" value={stock} onChange={(e) => setStock(Number(e.target.value))} />
+                                        <Input id="stock" type="number" min={0} max={10000} step={1} value={stock} onChange={(e) => setStock(Number(e.target.value))} />
                                     </div>
                                     <div className="grid gap-3">
-                                        <Label htmlFor="status">Status</Label>
-                                        <Select value={status} onValueChange={(value) => setStatus(value as 'In Stock' | 'Out of Stock')}>
-                                            <SelectTrigger id="status" aria-label="Select status">
-                                                <SelectValue placeholder="Select status" />
+                                        <Label htmlFor="status">Listing visibility</Label>
+                                        <Select value={isAvailable ? 'published' : 'archived'} onValueChange={(value) => setIsAvailable(value === 'published')}>
+                                            <SelectTrigger id="status">
+                                                <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="In Stock">In Stock</SelectItem>
-                                                <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                                                <SelectItem value="published">Published</SelectItem>
+                                                <SelectItem value="archived">Archived</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -703,15 +720,13 @@ export default function ProductFormPage() {
                                     </div>
                                     <div className="grid gap-3">
                                         <Label htmlFor="badge">Badge</Label>
-                                        <Select value={badge} onValueChange={(value) => setBadge(value as 'A' | 'B' | 'C' | 'D' | undefined)}>
+                                        <Select value={badge || 'none'} onValueChange={(value) => setBadge(value === 'none' ? undefined : value)}>
                                             <SelectTrigger id="badge" aria-label="Select badge">
                                                 <SelectValue placeholder="Select badge" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="A">A - Premium</SelectItem>
-                                                <SelectItem value="B">B - Standard</SelectItem>
-                                                <SelectItem value="C">C - Basic</SelectItem>
-                                                <SelectItem value="D">D - Economy</SelectItem>
+                                                <SelectItem value="none">No badge</SelectItem>
+                                                {Array.from(new Set(['Inspected', 'Refurbished', 'Bestseller', 'Sale', ...(badge ? [badge] : [])])).map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -738,7 +753,7 @@ export default function ProductFormPage() {
                     <Button variant="outline" size="sm" onClick={() => router.push('/admin/products')}>
                         Discard
                     </Button>
-                    <Button size="sm" onClick={handleSave}>Save Product</Button>
+                    <Button size="sm" disabled={isUploading || isSaving} onClick={handleSave}>Save Product</Button>
                 </div>
             </div>
         </main>

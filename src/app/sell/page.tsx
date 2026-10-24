@@ -1,86 +1,11 @@
 'use client';
-
-import PriceEstimator from "@/components/price-estimator";
-import ManualSellForm from "@/components/sell/manual-sell-form";
-import SellingPoints from "@/components/sell/selling-points";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ArrowDown, Mail, MessageSquare, PencilLine } from "lucide-react";
-
+import Link from 'next/link';
+import { ArrowUpRight, Camera, ClipboardCheck, Recycle } from 'lucide-react';
+import ManualSellForm from '@/components/sell/manual-sell-form';
+import PriceEstimator from '@/components/price-estimator';
+import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
 export default function SellPage() {
-    const scrollToEstimator = () => {
-        document.getElementById('price-estimator')?.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    return (
-        <>
-            <section className="bg-muted/20 text-center">
-                <div className="container py-20 md:py-32">
-                     <h1 className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter">
-                        Get an Instant AI Price Estimate for Your Gear
-                    </h1>
-                    <p className="mt-4 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Find out your gear’s value instantly and complete your sale in minutes.
-                    </p>
-                    <Button size="lg" className="mt-8 font-bold" onClick={scrollToEstimator}>
-                        Start Now <ArrowDown className="ml-2 h-5 w-5" />
-                    </Button>
-                </div>
-            </section>
-            
-            <SellingPoints />
-
-            <div className="bg-background" id="price-estimator">
-                <div className="container py-12 md:py-20">
-                    <div className="grid lg:grid-cols-3 gap-12 items-start">
-                        <div className="flex flex-col gap-6 lg:col-span-1">
-                            <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tighter">
-                                Describe Your Gear
-                            </h2>
-                            <p className="text-lg text-muted-foreground">
-                               Fill out the details to get a real-time price estimate from our AI. The more accurate you are, the better the estimate.
-                            </p>
-                           
-                            <div className="mt-4 p-6 bg-blue-100/50 border-l-4 border-primary rounded-r-lg">
-                               <h4 className="font-headline font-semibold text-primary">How it works:</h4>
-                               <ol className="list-decimal list-inside text-primary/80 mt-2 space-y-1">
-                                   <li>Describe your gear below to get an estimate.</li>
-                                   <li>Schedule a pickup at your convenience.</li>
-                                   <li>Our team inspects and confirms the price on-site.</li>
-                                   <li>Accept the offer and receive instant payment.</li>
-                               </ol>
-                            </div>
-                        </div>
-                        <div className="lg:col-span-2">
-                            <PriceEstimator />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <Separator className="my-12" />
-
-            <section className="container pb-20">
-                <div className="text-center mb-12">
-                    <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tighter">
-                        Or, Submit a Manual Request
-                    </h2>
-                    <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
-                        Prefer to do it the old-fashioned way? Fill out the form below and our team will get back to you.
-                    </p>
-                </div>
-                <div className="max-w-4xl mx-auto">
-                    <div className="glass-container rounded-lg">
-                        <div className="glass-filter"></div>
-                        <div className="glass-overlay"></div>
-                        <div className="glass-specular"></div>
-                        <div className="glass-content p-0">
-                           <ManualSellForm />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </>
-    );
+  const { isLoggedIn, loading } = useAuth();
+  return <div><section className="relative overflow-hidden bg-[hsl(var(--brand-navy))] text-white"><div className="container grid gap-8 py-16 md:grid-cols-[1.3fr_1fr] md:py-24"><div><p className="text-xs uppercase tracking-[.2em] text-orange-300">Pass it forward</p><h1 className="mt-5 text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">Good gear.<br />Another great game.</h1><p className="mt-6 max-w-lg leading-relaxed text-white/75">That bat, racket, or pair of boots has more to give. Create a listing and help another player get started.</p><a href="#listing" className="mt-7 inline-flex items-center gap-2 font-semibold text-orange-300">List your equipment <ArrowUpRight size={18} /></a></div><div className="liquid-glass self-center rounded-3xl p-7 text-primary">{[{ icon: Camera, title: 'Make it look its best', text: 'Add 3–10 clear photos. Show the details and any wear.' },{ icon: ClipboardCheck, title: 'Tell its story', text: 'Choose the sport, describe the condition, and set a fair price.' },{ icon: Recycle, title: 'Ready for the next player', text: 'Our team reviews your listing before it goes live.' }].map((s,i) => <div key={s.title} className={`flex gap-4 py-5 ${i < 2 ? 'border-b border-primary/10' : ''}`}><s.icon className="mt-1 h-5 w-5 shrink-0 text-accent" /><div><h2 className="font-semibold">{s.title}</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{s.text}</p></div></div>)}</div></div></section><div id="listing" className="container grid scroll-mt-24 gap-10 py-12 md:py-20 lg:grid-cols-[.7fr_1.3fr]"><aside><p className="text-xs font-semibold uppercase tracking-widest text-accent">Your gear, your next chapter</p><h2 className="mt-4 text-3xl font-semibold tracking-tight">Create your listing</h2><p className="mt-4 leading-relaxed text-muted-foreground">Be specific about the brand, size, age, and condition. Accurate details help the next player buy with confidence.</p><div className="mt-7 rounded-2xl bg-primary/5 p-5 text-sm leading-relaxed text-primary">You stay in control. Track your submission under Account → Sell Requests. Our team can approve it or explain what needs to change.</div><details className="mt-6 rounded-2xl border p-5"><summary className="cursor-pointer font-medium">Need help setting a price?</summary><div className="mt-5"><PriceEstimator /></div></details></aside><div className="liquid-glass rounded-3xl border p-1">{loading ? <p className="p-8" role="status">Checking your account…</p> : isLoggedIn ? <ManualSellForm /> : <div className="p-8"><h3 className="text-2xl font-semibold">Sign in to start selling</h3><p className="mt-3 text-muted-foreground">Keep your listings, orders, and updates together in one account.</p><Button className="mt-6" asChild><Link href="/login?redirect=%2Fsell">Sign in to list your gear <ArrowUpRight /></Link></Button></div>}</div></div></div>;
 }

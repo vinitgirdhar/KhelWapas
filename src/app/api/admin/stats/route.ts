@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
     const now = new Date()
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
 
     // Fetch all necessary data in parallel
     const [
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
         _sum: { totalPrice: true },
         where: {
           paymentStatus: 'paid',
-          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+          createdAt: { gte: lastMonthStart, lt: currentMonthStart },
         },
       }),
       // Current month orders
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
       }),
       // Last month orders
       prisma.order.count({
-        where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+        where: { createdAt: { gte: lastMonthStart, lt: currentMonthStart } },
       }),
       // Current month users
       prisma.user.count({
@@ -64,12 +63,12 @@ export async function GET(request: NextRequest) {
       prisma.user.count({
         where: { 
           role: 'user',
-          createdAt: { gte: lastMonthStart, lte: lastMonthEnd }
+          createdAt: { gte: lastMonthStart, lt: currentMonthStart }
         },
       }),
       // Total products
       prisma.product.count({
-        where: { isAvailable: true },
+        where: { isAvailable: true, stock: { gt: 0 } },
       }),
     ])
 

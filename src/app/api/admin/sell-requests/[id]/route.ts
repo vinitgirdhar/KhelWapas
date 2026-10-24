@@ -1,142 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-
-interface RouteParams {
-  params: {
-    id: string
-  }
-}
-
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/auth';
+import { apiError, ApiError } from '@/lib/api';
+type Context = { params: Promise<{ id: string }> };
+export async function PATCH(request: NextRequest, { params }: Context) {
   try {
-    // Check if user is admin
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
-
-  const body = await request.json()
-  const { action, reason } = body // 'approve' or 'reject' + optional reason
-
-    if (!['approve', 'reject'].includes(action)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid action. Must be "approve" or "reject"' },
-        { status: 400 }
-      )
-    }
-
-    // Get the sell request
-    const sellRequest = await prisma.sellRequest.findUnique({
-      where: { id: params.id }
-    })
-
-    if (!sellRequest) {
-      return NextResponse.json(
-        { success: false, message: 'Sell request not found' },
-        { status: 404 }
-      )
-    }
-
-    if (action === 'approve') {
-      // Create a product from the sell request
-      const product = await prisma.product.create({
-        data: {
-          name: sellRequest.title,
-          category: sellRequest.category,
-          type: 'preowned', // Assuming sell requests are for preowned items
-          price: sellRequest.price,
-          grade: 'B', // Default grade, could be customizable
-          imageUrls: sellRequest.imageUrls as unknown as any,
-          description: sellRequest.description,
-          specs: {
-            "Contact Method": sellRequest.contactMethod,
-            "Contact Detail": sellRequest.contactDetail || 'N/A'
-          },
-          badge: 'From Seller',
-          isAvailable: true
-        }
-      })
-
-      // Update sell request status to approved
-      await prisma.sellRequest.update({
-        where: { id: params.id },
-        data: { status: 'Approved' }
-      })
-
-      return NextResponse.json({
-        success: true,
-        message: 'Sell request approved and product created',
-        product: {
-          id: product.id,
-          name: product.name
-        }
-      })
-    } else {
-      // Reject the sell request
-      await prisma.sellRequest.update({
-        where: { id: params.id },
-        data: { status: 'Rejected' }
-      })
-
-      return NextResponse.json({
-        success: true,
-        message: 'Sell request rejected'
-      })
-    }
-  } catch (error) {
-    console.error('Update sell request error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    await requireUser(request, true);
+    const { id } = await params;
+    const data = z.object({ action: z.enum(['approve','reject']), reason: z.string().trim().max(1000).optional(), grade: z.enum(['A','B','C','D']).default('B') }).parse(await request.json());
+    const result = await prisma.$transaction(async tx => {
+      const listing = await tx.sellRequest.findUnique({ where: { id } });
+      if (!listing) throw new ApiError(404, 'Listing not found');
+      if (listing.status !== 'Pending') throw new ApiError(409, 'This listing has already been reviewed');
+      const result = await tx.sellRequest.updateMany({ where: { id, status: 'Pending' }, data: { status: data.action === 'approve' ? 'Approved' : 'Rejected', reviewReason: data.reason || null } });
+      if (!result.count) throw new ApiError(409, 'This listing was just reviewed');
+      if (data.action === 'reject') return null;
+      return tx.product.create({ data: { name: listing.title, category: listing.category, type: 'preowned', price: listing.price, grade: data.grade, imageUrls: listing.imageUrls!, description: listing.description, sellerId: listing.userId, sourceRequestId: listing.id, stock: 1, badge: 'Reviewed', isAvailable: true } });
+    });
+    return NextResponse.json({ success: true, message: data.action === 'approve' ? 'Listing approved and published' : 'Listing rejected', product: result && { id: result.id, name: result.name } });
+  } catch (e) { return apiError(e); }
 }
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: Context) {
   try {
-    const currentUser = await getCurrentUser(request)
-    if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
-
-    const sellRequest = await prisma.sellRequest.findUnique({
-      where: { id: params.id },
-      include: {
-        user: { select: { id: true, fullName: true, email: true } }
-      }
-    })
-
-    if (!sellRequest) {
-      return NextResponse.json(
-        { success: false, message: 'Sell request not found' },
-        { status: 404 }
-      )
-    }
-
-    // Transform the data to parse JSON fields
-    const transformedRequest = {
-      ...sellRequest,
-      imageUrls: typeof sellRequest.imageUrls === 'string' 
-        ? JSON.parse(sellRequest.imageUrls) 
-        : sellRequest.imageUrls,
-      price: Number(sellRequest.price),
-      createdAt: sellRequest.createdAt.toISOString(),
-      updatedAt: sellRequest.updatedAt.toISOString()
-    }
-
-    return NextResponse.json({ success: true, sellRequest: transformedRequest })
-  } catch (error) {
-    console.error('Get sell request error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    await requireUser(request, true);
+    const listing = await prisma.sellRequest.findUnique({ where: { id: (await params).id }, include: { user: { select: { id: true, fullName: true, email: true } } } });
+    if (!listing) throw new ApiError(404, 'Listing not found');
+    return NextResponse.json({ success: true, sellRequest: { ...listing, price: Number(listing.price) } });
+  } catch (e) { return apiError(e); }
 }

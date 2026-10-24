@@ -1,0 +1,1 @@
+export const SPORTS_CATEGORIES = ['Athletics', 'Badminton', 'Basketball', 'Boxing', 'Cricket', 'Cycling', 'Fitness', 'Football', 'Golf', 'Gymnastics', 'Hockey', 'Rugby', 'Skating', 'Squash', 'Swimming', 'Table Tennis', 'Tennis', 'Volleyball', 'Water Sports', 'Winter Sports', 'Yoga', 'Other'];
