@@ -1,21 +1,13 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { DEMO_PRODUCTS } from '../src/data/demo-catalog';
 
 const prisma = new PrismaClient();
-
-async function run() {
-  const mockNames = [
-    'Yonex Astrox 100 ZZ',
-    'SG Cobra Xtreme Kashmir Willow Bat',
-    'Nivia Storm Football - Size 5',
-    'Spalding NBA Zi/O Excel Basketball',
-    'Wilson Tour Slam Lite Tennis Racquet',
-    'Cosco Sprint 66 Nylon Shuttlecock'
-  ];
-  const deleted = await prisma.product.deleteMany({ where: { name: { in: mockNames } } });
-  console.log(`🧹 Removed ${deleted.count} mock products.`);
+async function main() {
+  const result = await prisma.product.updateMany({
+    where: { id: { in: DEMO_PRODUCTS.map(product => product.id) }, badge: 'Demo listing', sellerId: null, sourceRequestId: null },
+    data: { isAvailable: false },
+  });
+  console.log(`Archived ${result.count} demo listings. Order history and inventory are preserved.`);
 }
-
-run().catch(e => {
-  console.error(e);
-  process.exit(1);
-}).finally(async () => prisma.$disconnect());
+main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

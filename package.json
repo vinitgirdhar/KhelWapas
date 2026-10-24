@@ -14,7 +14,7 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "test": "bash scripts/test.sh",
-    "test:unit": "tsx --test tests/domain.test.ts"
+    "test:unit": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

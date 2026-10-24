@@ -170,7 +170,8 @@ export default function ProductDetailPage() {
               />
             </CardContent>
           </Card>
-          <div className="grid grid-cols-5 gap-2">
+          {product.specs?.['Image source'] === 'AI-generated product illustration' && <p className="text-xs leading-relaxed text-muted-foreground">AI-generated demo image · Illustrative product and condition.</p>}
+          {allImages.length > 1 && <div className="grid grid-cols-5 gap-2">
             {allImages.map((img, index) => (
               <button key={index} type="button" aria-label={`View image ${index + 1} of ${allImages.length}`} aria-pressed={selectedImage === img} onClick={() => setSelectedImage(img)} className={cn("overflow-hidden rounded-md border-2", selectedImage === img ? "border-primary" : "border-transparent")}>
                  <Image
@@ -182,7 +183,7 @@ export default function ProductDetailPage() {
                 />
               </button>
             ))}
-          </div>
+          </div>}
         </div>
 
         {/* Product Info */}
