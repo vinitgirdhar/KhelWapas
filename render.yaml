@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: khelwapas-api
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci --include=dev && npm run cloud:build
+    startCommand: npm run cloud:start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DEPLOYMENT_ROLE
+        value: backend
+      - key: APP_URL
+        value: https://khelwapas.netlify.app
+      - key: UPLOAD_STORAGE
+        value: database
+      - key: SEED_DEMO_DATA
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEMO_ADMIN_EMAIL
+        sync: false
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: khelwapas-db
+          property: connectionString
+
+databases:
+  - name: khelwapas-db
+    region: singapore
+    plan: free
+    postgresMajorVersion: "16"

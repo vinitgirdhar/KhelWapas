@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/server/db';
+import { containsText } from '@/server/search';
 import { serializeProduct } from '@/server/marketplace/products';
 import { apiError, pagination } from '@/server/api';
 export async function GET(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     const maxPrice = z.coerce.number().finite().min(minPrice).max(10000000).parse(params.get('maxPrice') || 10000000);
     const sort = z.enum(['newest','price-asc','price-desc']).parse(params.get('sort') || 'newest');
     const featured = z.enum(['true','false']).optional().parse(params.get('featured') || undefined) === 'true';
-    const where: Prisma.ProductWhereInput = { ...(type ? { type } : {}), ...(category ? { category } : {}), ...(grade ? { grade } : {}), price: { gte: minPrice, lte: maxPrice }, ...(params.get('available') === 'true' ? { isAvailable: true, stock: { gt: 0 } } : {}), ...(query ? { OR: [{ name: { contains: query } }, { description: { contains: query } }, { category: { contains: query } }] } : {}) };
+    const where: Prisma.ProductWhereInput = { ...(type ? { type } : {}), ...(category ? { category } : {}), ...(grade ? { grade } : {}), price: { gte: minPrice, lte: maxPrice }, ...(params.get('available') === 'true' ? { isAvailable: true, stock: { gt: 0 } } : {}), ...(query ? { OR: [{ name: containsText(query) }, { description: containsText(query) }, { category: containsText(query) }] } : {}) };
     if (featured) {
       // One eligible listing per sport keeps the landing selection varied even
       // when several recent uploads belong to the same sport.

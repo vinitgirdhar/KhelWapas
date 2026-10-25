@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { backendOrigin } from '@/lib/deployment';
 export function middleware(request: NextRequest) {
   if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
     const origin = request.headers.get('origin');
@@ -8,9 +9,14 @@ export function middleware(request: NextRequest) {
     const max = isUpload ? 32 * 1024 * 1024 : 1024 * 1024;
     if (Number(request.headers.get('content-length') || 0) > max) return NextResponse.json({ success: false, message: 'Request too large' }, { status: 413 });
   }
-  const response = NextResponse.next();
+  let response: NextResponse;
+  if (process.env.DEPLOYMENT_ROLE === 'frontend' && request.nextUrl.pathname !== '/api/backend-status') {
+    const destination = backendOrigin(process.env.BACKEND_ORIGIN);
+    if (!destination) return NextResponse.json({ success: false, message: 'The marketplace connection is not configured' }, { status: 503 });
+    response = NextResponse.rewrite(new URL(request.nextUrl.pathname + request.nextUrl.search, destination));
+  } else response = NextResponse.next();
   response.headers.set('Cache-Control', 'no-store');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   return response;
 }
-export const config = { matcher: '/api/:path*' };
+export const config = { matcher: ['/api/:path*', '/uploads/:path*'] };

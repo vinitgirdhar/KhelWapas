@@ -6,10 +6,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import {
-  estimateResalePrice,
-  type EstimateResalePriceOutput,
-} from '@/server/pricing/estimate-resale-price';
+import type { EstimateResalePriceOutput } from '@/server/pricing/estimate-resale-price';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -63,8 +60,12 @@ export default function PriceEstimator() {
     setResult(null);
     setError(null);
     try {
-      const estimation = await estimateResalePrice(values);
-      setResult(estimation);
+      const response = await fetch('/api/pricing/estimate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'The price guide is unavailable. Please try again.');
+      setResult(data.estimate);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An unexpected error occurred. Please try again.');
     } finally {

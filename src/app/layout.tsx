@@ -7,6 +7,7 @@ import { CartProvider } from '@/hooks/use-cart';
 import AppShell from '@/components/layout/app-shell';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { themeBootstrap } from '@/lib/theme';
+import BackendGate from '@/components/layout/backend-gate';
 
 export default function RootLayout({
   children,
@@ -30,11 +31,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/logo.png" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
-        <ThemeProvider><AuthProvider>
+        <ThemeProvider><BackendGate><AuthProvider>
           <CartProvider>
             <AppShell>{children}</AppShell>
           </CartProvider>
-        </AuthProvider></ThemeProvider>
+        </AuthProvider></BackendGate></ThemeProvider>
       </body>
     </html>
   );

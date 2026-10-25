@@ -263,3 +263,13 @@ model Pickup {
   status String @default("Scheduled")
   createdAt DateTime @default(now())
 }
+
+// Cloud prototype uploads survive Render's ephemeral filesystem.
+model UploadAsset {
+  path         String   @id
+  contentBytes Bytes
+  contentType  String   @default("image/webp")
+  createdAt    DateTime @default(now())
+
+  @@map("upload_assets")
+}

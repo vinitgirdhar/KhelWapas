@@ -9,6 +9,7 @@
 
   <p align="center">
     <a href="#-quick-start-guide"><b>Quick Start</b></a> •
+    <a href="docs/deployment.md"><b>Deployment</b></a> •
     <a href="#-visual-tour"><b>Visual Tour</b></a> •
     <a href="#-core-capabilities--highlights"><b>Features</b></a> •
     <a href="#-demo-access--roles"><b>Demo Access</b></a> •

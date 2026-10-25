@@ -14,7 +14,9 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "test": "bash scripts/test.sh",
-    "test:unit": "tsx --test tests/*.test.ts"
+    "test:unit": "tsx --test tests/*.test.ts",
+    "cloud:build": "node scripts/build-cloud.mjs",
+    "cloud:start": "node scripts/start-cloud.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
