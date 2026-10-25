@@ -106,7 +106,7 @@ model SellRequest {
   status        RequestStatus @default(Pending)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  
+
   @@index([userId])
   @@index([status])
   @@index([createdAt])
@@ -142,7 +142,7 @@ model Order {
   fulfillmentStatus String
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  
+
   @@index([userId])
   @@index([paymentStatus])
   @@index([fulfillmentStatus])
@@ -174,7 +174,7 @@ model Address {
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([userId])
   @@index([userId, isDefault])
   @@map("addresses")
@@ -198,7 +198,7 @@ model PaymentMethod {
   isDefault     Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  
+
   @@index([userId])
   @@map("payment_methods")
 }
@@ -273,4 +273,3 @@ model UploadAsset {
 
   @@map("upload_assets")
 }
-
